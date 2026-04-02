@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon TCG Pro: Quiz Battle - Ultra Edition</title>
+    <style>
+        :root{--team1-color:#2a75bb;--team2-color:#e3350d;--color-fire:#ff9d55;--color-water:#5090d6;--color-grass:#63bc5a;--color-electric:#f4d23c;--color-normal:#a8a878;--color-any:#eeeeee}
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Noto Sans TC',Arial,sans-serif;user-select:none}
+        body{background:#0a0a0c;color:#fff;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;transition:transform .1s}
+        
+        #fx-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:999}
+
+        #lobby{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;z-index:20;background:#0a0a0c;position:absolute;width:100%;height:100%}
+        .config-box{position:relative; z-index:10; background:#111;padding:40px;border-radius:24px;border:2px solid #ffcb05;width:100%;max-width:600px;text-align:center;box-shadow:0 0 30px rgba(255,203,5,.2);}
+        textarea{width:100%;height:120px;margin:20px 0;padding:15px;border-radius:12px;font-size:16px;background:#222;color:#fff;border:1px solid #444}
+        
+        .lobby-mascot { position: absolute; bottom: 15%; width: 180px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); animation: bounce 1.5s infinite alternate ease-in-out; pointer-events: none; z-index: 99;}
+        .mascot-left { left: 10%; }
+        .mascot-right { right: 10%; animation-delay: 0.75s; }
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-30px); } }
+        
+        .start-btn-content { display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .pokeball-icon { width: 28px; height: 28px; }
+
+        #battle-field{display:flex;height:100vh;flex-direction:column;overflow:hidden}
+        .battle-main{flex:1;display:flex;justify-content:space-between;padding:5px 10px;gap:5px;min-height:0}
+        
+        .team-container{flex:1;display:flex;flex-direction:column;gap:5px;padding:8px;border-radius:20px;background:rgba(255,255,255,.03);border:3px solid transparent;transition:.3s;min-height:0}
+        .team-container.active-team{border-color:#00f2ff;background:linear-gradient(180deg,rgba(0,242,255,.05) 0,rgba(0,100,255,.15) 100%);box-shadow:0 0 30px rgba(0,242,255,.6),inset 0 0 20px rgba(0,150,255,.4);animation:neonPulse 2s infinite alternate}
+        @keyframes neonPulse{0%{box-shadow:0 0 15px rgba(0,242,255,.4),inset 0 0 10px rgba(0,150,255,.3);border-color:#00c3ff}100%{box-shadow:0 0 35px rgba(0,242,255,.8),inset 0 0 25px rgba(0,150,255,.6);border-color:#00f2ff}}
+        
+        .field-area{display:flex;flex:1;gap:15px;align-items:center;justify-content:center;min-height:0;flex-direction:row}
+        .bench-grid{display:grid;grid-template-columns:repeat(2,105px);grid-template-rows:repeat(2,auto);gap:6px;justify-content:center}
+        .active-zone{flex:0 0 auto;display:flex;justify-content:center;align-items:center;padding:5px;border:2px dashed #333;border-radius:12px}
+        
+        .hand-wrapper { position: relative; width: 100%; margin-top: auto; }
+        
+        .hand-tooltip {
+            position: absolute;
+            bottom: 100%;
+            margin-bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            background: rgba(20, 20, 20, 0.9);
+            color: #ffcb05;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #ffcb05;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+            line-height: 1.4;
+        }
+        .hand-tooltip.show { opacity: 1; }
+        
+        .hand-area{height:95px;flex-shrink:0;background:rgba(0,0,0,.6);border-radius:12px;padding:5px;display:flex;flex-wrap:nowrap;gap:6px;align-items:center;justify-content:center; overflow:visible;}
+        .hand-card{position:relative; width:58px;height:82px;flex-shrink:0;border-radius:8px;padding:4px;cursor:pointer;text-align:center;font-size:10px;font-weight:700;border:2px solid #fff;transition:.2s;box-shadow:0 4px 8px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+        .hand-card:hover{transform:translateY(-5px);filter:brightness(1.2);z-index:50;}
+        .hand-card.selected{border-color:#0f0;transform:translateY(-8px);box-shadow:0 0 15px rgba(0,255,0,.5)}
+        
+        .hand-energy{background:#333}
+        .hand-trainer{background:linear-gradient(135deg,#eee,#aaa);color:#222}
+
+        .card{background:#fff;border-radius:8px;color:#222;padding:5px;font-size:10px;cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative;border:3px solid transparent;box-shadow:0 6px 12px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
+        .card-active{width:150px}
+        .card-active .card-img{height:75px}
+        .card-bench{width:105px}
+        .card-bench .card-img{height:55px}
+        .card-bench .attack-row{padding:2px;font-size:9px;margin-top:2px}
+        
+        .card.type-fire{background:var(--color-fire)}
+        .card.type-water{background:var(--color-water)}
+        .card.type-grass{background:var(--color-grass)}
+        .card.type-electric{background:var(--color-electric)}
+        .card.type-normal{background:var(--color-normal)}
+
+        .card:hover{transform:translateY(-3px) scale(1.03);z-index:5}
+        .card.is-active-fighter{border-color:gold;box-shadow:0 0 20px rgba(255,215,0,.5)}
+        .card.dead{filter:grayscale(100%);opacity:.5;pointer-events:none;}
+        .card.dead.revivable{pointer-events:auto;animation:pulse 1.5s infinite;border-color:#0f0;opacity:.8;filter:grayscale(50%)}
+        .card.valid-target{border-color:#0f0;box-shadow:0 0 15px #0f0;animation:pulse 1.5s infinite}
+        @keyframes pulse{0%,100%{box-shadow:0 0 5px #0f0}50%{box-shadow:0 0 20px #0f0}100%{box-shadow:0 0 5px #0f0}}
+
+        .card-header{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:2px}
+        .card-img{width:100%;background:white;border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid #333;position:relative}
+        .card-img img{width:85%;height:85%;object-fit:contain}
+        .inspect-btn{position:absolute;top:-5px;left:-5px;background:rgba(0,0,0,.8);color:white;border-radius:50%;width:22px;height:22px;display:flex;justify-content:center;align-items:center;z-index:10;transition:transform .2s;border:1px solid #fff}
+        .inspect-btn:hover{transform:scale(1.2);background:#ffcb05;color:black}
+        
+        .buff-container{position:absolute;top:-5px;right:-5px;display:flex;gap:2px;flex-direction:column;align-items:flex-end;z-index:5}
+        .buff-tag{background:#e3350d;color:white;padding:2px 4px;border-radius:6px;font-size:8px;font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,.5)}
+        .item-tag{background:#ffcb05;color:black;padding:2px 4px;border-radius:6px;font-size:8px;font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,.5);border:1px solid #000}
+        .status-container{position:absolute;bottom:3px;left:3px;display:flex;gap:2px;flex-wrap:wrap;z-index:5}
+        .status-tag{padding:2px 4px;border-radius:3px;font-size:8px;font-weight:bold;color:white;border:1px solid rgba(255,255,255,.5)}
+        .status-poison{background-color:#904090}
+        .status-paralyze{background-color:#f4d23c;color:#000}
+        .status-burn{background-color:#f40}
+        .status-asleep{background-color:#555}
+        .status-confused{background-color:#f90}
+        .energy-container{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;min-height:12px;background:rgba(255,255,255,.3);border-radius:4px;padding:2px}
+        .energy-icon{width:10px;height:10px;border-radius:50%;border:1px solid #000;display:inline-block}
+        .energy-fire{background:var(--color-fire)}
+        .energy-water{background:var(--color-water)}
+        .energy-grass{background:var(--color-grass)}
+        .energy-electric{background:var(--color-electric)}
+        .energy-normal{background:var(--color-normal)}
+        .energy-any{background:var(--color-any)}
+        .energy-rainbow{background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)}
+        
+        .attack-row { margin-top: 3px; padding: 3px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; border: 1px solid rgba(0,0,0,0.1); }
+        .attack-ready { background: rgba(255,255,255,0.95); opacity: 1; box-shadow: 0 0 5px rgba(255,255,255,0.6); }
+        .attack-ready:hover { transform: scale(1.02); background: #fff; }
+        .attack-disabled { background: rgba(255,255,255,0.3); opacity: 1; cursor: not-allowed; }
+        .attack-disabled span { color: #333; } 
+        .attack-special-icon { font-size: 9px; margin-left: 2px; color: #555; }
+        
+        .bench-attack-preview { margin-top:4px; display:flex; flex-direction:column; gap:3px; align-items:flex-start; background:rgba(255,255,255,0.1); border-radius:4px; padding:4px; }
+        .bench-attack-preview > div { display:flex; gap:2px; justify-content:flex-start; }
+
+        .hp-bar{height:6px;background:#333;border-radius:3px;margin:3px 0;overflow:hidden;border:1px solid #000}
+        .hp-fill{height:100%;background:#4caf50;transition:width .3s}
+
+        .center-panel{width:220px;display:flex;flex-direction:column;align-items:center;padding:5px;}
+        #log{flex:1;width:100%;background:rgba(0,0,0,.7);border:1px solid #333;border-radius:8px;padding:8px;font-size:12px;color:#eee;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+        .log-entry{border-bottom:1px solid #222;padding-bottom:4px;animation:slideIn .3s ease-out}
+        @keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+        
+        .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+        .modal-box{background:#1a1a1a;padding:30px;border-radius:20px;max-width:800px;width:90%;text-align:center;border:2px solid #ffcb05;position:relative}
+        .btn{padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:bold;border:none;font-size:14px;transition:.3s;width:100%;display:block;margin-bottom:8px;}
+        .btn:disabled{opacity:0.4;cursor:not-allowed;}
+        .btn:not(:disabled):hover{filter:brightness(1.3);transform:translateY(-2px)}
+        .btn-blue{background:var(--team1-color);color:white}
+        .btn-red{background:var(--team2-color);color:white}
+        .btn-gold{background:#ffcb05;color:black;}
+        .btn-dark{background:#333;color:white;}
+
+        #setup-ui { display: flex; flex-direction: column; width: 100%; gap: 5px; margin-bottom: 10px; }
+
+        .question-formatted{text-align:left;display:inline-block;max-width:100%;font-size:24px;line-height:1.5;font-family:Arial,sans-serif}
+        .question-body{text-align:left;margin-bottom:15px}
+        .question-q{color:white}
+        .question-a{margin-top:10px;color:#ffcb05;font-weight:bold}
+        .question-option{padding-left:2em;text-indent:-2em;margin-bottom:6px;text-align:left}
+        #inspect-content .card{width:280px;font-size:14px;padding:12px;cursor:default;box-shadow:0 0 30px rgba(255,255,255,.5)}
+        #inspect-content .card-img{height:140px}
+        #inspect-content .energy-icon{width:16px;height:16px}
+        #inspect-content .attack-row{font-size:14px;padding:8px;margin-top:8px}
+        .hidden{display:none!important}
+        .damage-pop{position:fixed;color:#f00;font-size:50px;font-weight:900;text-shadow:0 0 10px #fff;pointer-events:none;z-index:1000;animation:popUp 1s forwards}
+        @keyframes popUp{0%{transform:scale(.5);opacity:1}100%{transform:translateY(-80px) scale(1.5);opacity:0}}
+        #victory-modal{background:rgba(0,0,0,.5);justify-content:flex-end;padding-bottom:5vh}
+        #victory-modal .modal-box{border-width:4px;box-shadow:0 10px 40px rgba(0,0,0,.8);margin-bottom:20px;background:linear-gradient(45deg,#ffd700,#ff8c00);color:#000;border-color:#fff}
+        .close-btn{position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;color:#000;font-weight:bold;transition:.2s}
+        .close-btn:hover{transform:scale(1.2);color:#fff}
+        
+        .coin-container{perspective:1000px;margin:20px auto;width:100px;height:100px;cursor:pointer;transition:transform .2s}
+        .coin-container:hover{transform:scale(1.1)}
+        .coin-container.flipping{pointer-events:none}
+        .coin{width:100%;height:100%;position:relative;transform-style:preserve-3d}
+        .coin-face{position:absolute;width:100%;height:100%;border-radius:50%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;box-shadow:0 0 15px rgba(0,0,0,.5)}
+        .coin-heads{background:linear-gradient(to bottom,#f44336 50%,#fff 50%);border:4px solid #333}
+        .coin-heads::after{content:'';position:absolute;width:100%;height:6px;background:#333;top:50%;transform:translateY(-50%)}
+        .coin-heads::before{content:'';position:absolute;width:24px;height:24px;background:#fff;border:4px solid #333;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
+        .coin-tails{background:#333;color:#fff;transform:rotateY(180deg);border:4px solid #888}
+    </style>
+    <script>
+        function showAlert(msg) {
+            document.getElementById('sys-alert-msg').innerText = msg;
+            document.getElementById('sys-alert').style.display = 'flex';
+        }
+
+        function showConfirm(msg, onYes) {
+            document.getElementById('sys-confirm-msg').innerText = msg;
+            document.getElementById('sys-confirm-yes').onclick = () => { 
+                document.getElementById('sys-confirm').style.display = 'none'; 
+                onYes(); 
+            };
+            document.getElementById('sys-confirm').style.display = 'flex';
+        }
+
+        function showHandTooltip(team, text) {
+            const el = document.getElementById('hand-tooltip-' + team);
+            if (el && text) { el.innerText = text; el.classList.add('show'); }
+        }
+        function hideHandTooltip(team) {
+            const el = document.getElementById('hand-tooltip-' + team);
+            if (el) el.classList.remove('show');
+        }
+    </script>
+</head>
+<body>
+
+<canvas id="fx-canvas"></canvas>
+
+<div id="sys-alert" class="modal" style="z-index: 9999;">
+    <div class="modal-box" style="border-color: #ff4444; padding: 40px; max-width: 500px;">
+        <div id="sys-alert-msg" style="font-size: 24px; margin-bottom: 30px; line-height:1.5;"></div>
+        <button class="btn btn-gold" style="font-size:18px; width:150px; margin:0 auto;" onclick="document.getElementById('sys-alert').style.display='none'">確定</button>
+    </div>
+</div>
+
+<div id="sys-confirm" class="modal" style="z-index: 9999;">
+    <div class="modal-box" style="border-color: #ffcb05; padding: 40px; max-width: 500px;">
+        <div id="sys-confirm-msg" style="font-size: 24px; margin-bottom: 30px; line-height:1.5;"></div>
+        <div style="display:flex; gap:20px; justify-content:center;">
+            <button id="sys-confirm-yes" class="btn btn-blue" style="font-size:18px; width:120px; margin:0;">確定</button>
+            <button class="btn btn-red" style="font-size:18px; width:120px; margin:0;" onclick="document.getElementById('sys-confirm').style.display='none'">取消</button>
+        </div>
+    </div>
+</div>
+
+<div id="lobby">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" class="lobby-mascot mascot-left">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png" class="lobby-mascot mascot-right">
+    
+    <div class="config-box">
+        <h1 style="color: #ffcb05; margin-bottom: 15px; font-size: 36px;">Pokémon TCG Pro</h1>
+        <p style="margin-bottom: 20px; color: #aaa;">終極平衡版：修正所有數值細節、精準戰術規則！</p>
+        <textarea id="qInput" placeholder="請輸入題目，用 / 分隔...&#10;範例：Q: 請問蘋果英文是？ A: Apple (1) yes (2) no (3) maybe (4) wow"></textarea>
+        
+        <button class="btn btn-gold" style="width:260px; margin:0 auto; padding:15px; font-size:20px;" onclick="initGame()">
+            <div class="start-btn-content">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Pok%C3%A9_Ball_icon.svg" class="pokeball-icon">
+                START 進入戰鬥
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Pok%C3%A9_Ball_icon.svg" class="pokeball-icon">
+            </div>
+        </button>
+    </div>
+</div>
+
+<div id="battle-field" class="hidden">
+    <div class="battle-main">
+        <div id="side-1" class="team-container">
+            <div id="header-1" style="display:flex; justify-content:center; align-items:center; gap:10px;"></div>
+            <div class="field-area" id="field-1"></div>
+            
+            <div class="hand-wrapper">
+                <div id="hand-tooltip-1" class="hand-tooltip"></div>
+                <div style="font-size: 11px; margin-bottom: 2px;">手牌區 (最多7張)：</div>
+                <div class="hand-area" id="hand-1"></div>
+            </div>
+        </div>
+
+        <div class="center-panel">
+            <h2 id="turn-indicator" style="color: #ffcb05; margin-bottom: 8px; font-size: 16px; text-align: center;"></h2>
+            <div id="action-hint" style="color: #888; font-size: 12px; text-align: center; margin-bottom: 8px; min-height: 35px;"></div>
+            
+            <div id="setup-ui">
+                <button id="btn-redraw" class="btn btn-gold" onclick="redrawCards()">🔄 重抽卡牌 (2)</button>
+                <button class="btn btn-blue" onclick="startGame(1)">▶ TEAM 1 先攻</button>
+                <button class="btn btn-red" onclick="startGame(2)">▶ TEAM 2 先攻</button>
+            </div>
+            
+            <button id="end-turn-btn" class="btn btn-dark" style="display: none;" onclick="endTurn()">結束回合</button>
+            <div id="log"></div>
+        </div>
+
+        <div id="side-2" class="team-container">
+            <div id="header-2" style="display:flex; justify-content:center; align-items:center; gap:10px;"></div>
+            <div class="field-area" id="field-2"></div>
+            
+            <div class="hand-wrapper">
+                <div id="hand-tooltip-2" class="hand-tooltip"></div>
+                <div style="font-size: 11px; margin-bottom: 2px;">手牌區 (最多7張)：</div>
+                <div class="hand-area" id="hand-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="quiz-modal" class="modal">
+    <div class="modal-box">
+        <h2 id="modal-team-name" style="margin-bottom: 20px;"></h2>
+        <div id="quiz-text" style="margin: 30px 0;"></div>
+        <div style="display: flex; gap: 20px; justify-content: center;">
+            <button class="btn" style="background: #4caf50; color: white; padding: 15px 40px; width:auto;" onclick="checkAnswer(true)">◯ 答對</button>
+            <button class="btn" style="background: #f44336; color: white; padding: 15px 40px; width:auto;" onclick="checkAnswer(false)">✕ 答錯</button>
+        </div>
+    </div>
+</div>
+
+<div id="coin-modal" class="modal">
+    <div class="modal-box">
+        <h2 style="color:#f4d23c;">🪙 判定中...</h2>
+        <p id="coin-desc" style="font-size: 16px; margin: 10px 0; line-height:1.4;"></p>
+        <div class="coin-container" id="auto-coin" onclick="autoFlipCoin()" title="點擊自動擲硬幣！">
+            <div class="coin" id="coin-inner">
+                <div class="coin-face coin-heads"></div>
+                <div class="coin-face coin-tails">反</div>
+            </div>
+        </div>
+        <p style="font-size:11px; color:#888; margin-bottom: 15px;">點擊上方硬幣自動投擲，或點擊下方按鈕手動選擇</p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button class="btn btn-blue" style="width:auto;" onclick="resolveCoinFlip(true)">手動：正面</button>
+            <button class="btn btn-red" style="width:auto;" onclick="resolveCoinFlip(false)">手動：反面</button>
+        </div>
+    </div>
+</div>
+
+<div id="inspect-modal" class="modal" onclick="closeInspect()">
+    <div id="inspect-content" onclick="event.stopPropagation()"></div>
+    <div style="margin-top: 20px; color: #ccc;">點擊背景關閉</div>
+</div>
+
+<div id="victory-modal" class="modal" style="z-index: 10002;">
+    <div class="modal-box">
+        <div class="close-btn" onclick="document.getElementById('victory-modal').style.display='none'">✖</div>
+        <h1 id="victory-team-text" style="font-size: 40px; text-shadow: 2px 2px #fff; margin-bottom: 15px;"></h1>
+        <p style="font-size: 18px; font-weight: bold;">遊戲結束！</p>
+        <button class="btn btn-blue" onclick="location.reload()" style="margin-top: 20px; font-size: 20px; padding: 12px 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); width:auto;">重新開始遊戲</button>
+    </div>
+</div>
+
+<script>
+    const fxCanvas = document.getElementById('fx-canvas');
+    const fxCtx = fxCanvas.getContext('2d');
+    let fxParticles = [], fxSparks = [], fxProjectiles = [], fxSpecial = [];
+    let screenShake = 0, hitStop = 0, fxFrame = 0;
+
+    function resizeFxCanvas() { fxCanvas.width = window.innerWidth; fxCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeFxCanvas); resizeFxCanvas();
+
+    function getTypeColor(type) {
+        const colors = { fire: '#FF4400', water: '#0088FF', grass: '#00FF44', electric: '#FFDD00', normal: '#FFFFFF', psychic: '#FF00FF', poison: '#A040A0', dragon: '#7038F8' };
+        return colors[type] || '#FFFFFF';
+    }
+
+    function triggerModernHit(x, y, type, dmg) {
+        const color = getTypeColor(type);
+        fxSparks.push({ x, y, color, l: 1.0, scale: 0.1, maxScale: 0.5 + dmg/250 });
+        for(let i=0; i<20; i++) fxParticles.push({ x, y, c: color, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, l: 1.0, d: 0.03, s: 4 + Math.random()*4 });
+        screenShake = Math.min(25, 10 + dmg/10); hitStop = 6;
+    }
+
+    function triggerUltimateHit(tx, ty, type, dmg, sx, sy) {
+        const color = getTypeColor(type);
+        if (type === 'electric') {
+            fxSpecial.push({ type: 'thunder', x: tx, y: ty, l: 1.0 });
+            setTimeout(() => { triggerModernHit(tx, ty, type, dmg * 1.5); screenShake = 40; hitStop = 8; }, 150);
+        } else {
+            let count = 0;
+            let burst = setInterval(() => {
+                fxProjectiles.push({
+                    x: sx + (Math.random()-0.5)*80, y: sy + (Math.random()-0.5)*80,
+                    tx: tx + (Math.random()-0.5)*60, ty: ty + (Math.random()-0.5)*60,
+                    c: color, type: type, speed: 0.15, progress: 0
+                });
+                count++;
+                if (count >= 7) {
+                    clearInterval(burst);
+                    setTimeout(() => { triggerModernHit(tx, ty, type, dmg); screenShake = 35; hitStop = 8; }, 150);
+                }
+            }, 80);
+        }
+    }
+
+    function drawSparkV2(s) {
+        fxCtx.save(); fxCtx.translate(s.x, s.y); fxCtx.globalAlpha = s.l; fxCtx.globalCompositeOperation = 'lighter';
+        const coreGrad = fxCtx.createRadialGradient(0, 0, 0, 0, 0, 50 * s.scale);
+        coreGrad.addColorStop(0, '#fff'); coreGrad.addColorStop(0.4, s.color); coreGrad.addColorStop(1, 'transparent');
+        fxCtx.fillStyle = coreGrad; fxCtx.beginPath(); fxCtx.arc(0, 0, 60 * s.scale, 0, Math.PI*2); fxCtx.fill();
+        fxCtx.strokeStyle = s.color; fxCtx.lineWidth = 5 * s.l; fxCtx.beginPath(); fxCtx.arc(0, 0, 150 * s.scale, 0, Math.PI * 2); fxCtx.stroke();
+        fxCtx.fillStyle = '#fff';
+        for(let i=0; i<16; i++) {
+            fxCtx.save(); fxCtx.rotate((i / 16) * Math.PI * 2 + fxFrame * 0.05);
+            const len = (i % 2 === 0 ? 200 : 100) * s.scale; const w = 3 * s.scale;
+            fxCtx.beginPath(); fxCtx.moveTo(0, -w); fxCtx.lineTo(len, 0); fxCtx.lineTo(0, w); fxCtx.fill();
+            if(i % 4 === 0) { fxCtx.globalAlpha = s.l * 0.5; fxCtx.fillRect(0, -1, len * 1.5, 2); }
+            fxCtx.restore();
+        }
+        fxCtx.restore();
+    }
+
+    function animateFx() {
+        fxFrame++;
+        if(hitStop > 0) { hitStop--; requestAnimationFrame(animateFx); return; }
+        if(screenShake > 0) {
+            document.body.style.transform = `translate(${(Math.random()-0.5)*screenShake}px, ${(Math.random()-0.5)*screenShake}px)`;
+            screenShake *= 0.85; if(screenShake < 0.5) { screenShake = 0; document.body.style.transform = ''; }
+        } else {
+            document.body.style.transform = '';
+        }
+        fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height); fxCtx.globalCompositeOperation = 'lighter';
+        
+        fxSpecial = fxSpecial.filter(s => s.l > 0);
+        fxSpecial.forEach(s => {
+            if (s.type === 'thunder') {
+                fxCtx.save(); fxCtx.strokeStyle = '#FFF'; fxCtx.shadowBlur = 40; fxCtx.shadowColor = '#FFDD00'; fxCtx.lineWidth = 20 * s.l;
+                fxCtx.beginPath(); let x = s.x + (Math.random()-0.5)*150, y = 0; fxCtx.moveTo(x, y);
+                while(y < s.y) { x += (Math.random()-0.5)*80; y += 50; fxCtx.lineTo(x, y); } fxCtx.stroke();
+                fxCtx.strokeStyle = '#FFFFFF'; fxCtx.lineWidth = 8 * s.l; fxCtx.beginPath(); fxCtx.moveTo(s.x, 0); fxCtx.lineTo(s.x, s.y); fxCtx.stroke();
+                fxCtx.restore(); s.l -= 0.15;
+            }
+        });
+
+        fxProjectiles = fxProjectiles.filter(p => p.progress < 1);
+        fxProjectiles.forEach(p => {
+            p.progress += p.speed; if (p.progress > 1) p.progress = 1;
+            const curX = p.x + (p.tx - p.x) * p.progress; const curY = p.y + (p.ty - p.y) * p.progress;
+            fxCtx.save(); fxCtx.fillStyle = p.c; fxCtx.shadowBlur = 15; fxCtx.shadowColor = p.c; fxCtx.translate(curX, curY);
+            if (p.type === 'grass') { fxCtx.rotate(p.progress * Math.PI * 4); fxCtx.beginPath(); fxCtx.ellipse(0, 0, 16, 6, 0, 0, Math.PI*2); fxCtx.fill(); }
+            else if (p.type === 'water') { fxCtx.beginPath(); fxCtx.arc(0, 0, 12, 0, Math.PI*2); fxCtx.fill(); for(let i=0; i<2; i++) fxParticles.push({x:curX, y:curY, c:'#fff', vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3, s:3, d:0.1}); }
+            else if (p.type === 'fire') { fxCtx.beginPath(); fxCtx.arc(0, 0, 14, 0, Math.PI*2); fxCtx.fill(); fxParticles.push({x:curX, y:curY, c:'#ff0', vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, s:5, d:0.1}); }
+            else { fxCtx.beginPath(); fxCtx.arc(0, 0, 12, 0, Math.PI*2); fxCtx.fill(); fxParticles.push({x:curX, y:curY, c:p.c, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, s:4, d:0.1}); }
+            fxCtx.restore();
+            if (p.progress === 1) { fxSparks.push({ x: p.tx, y: p.ty, color: p.c, l: 1.0, scale: 0.08, maxScale: 0.25 }); screenShake = 15; }
+        });
+
+        fxSparks = fxSparks.filter(s => s.l > 0);
+        fxSparks.forEach(s => { drawSparkV2(s); s.scale += (s.maxScale - s.scale) * 0.2; s.l -= 0.04; });
+        
+        fxParticles = fxParticles.filter(p => p.l > 0);
+        fxParticles.forEach(p => {
+            fxCtx.save(); fxCtx.globalAlpha = p.l; fxCtx.fillStyle = p.c; fxCtx.shadowBlur = 10; fxCtx.shadowColor = p.c;
+            fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.s, 0, Math.PI*2); fxCtx.fill(); fxCtx.restore(); p.x += p.vx; p.y += p.vy; p.l -= p.d;
+        });
+
+        requestAnimationFrame(animateFx);
+    }
+    animateFx();
+
+    function autoFlipCoin() {
+        const coinBtn = document.getElementById('auto-coin');
+        if (coinBtn.classList.contains('flipping')) return;
+        coinBtn.classList.add('flipping');
+        const coinInner = document.getElementById('coin-inner');
+        const isHeads = Math.random() < 0.5;
+        const spins = 5; const deg = spins * 360 + (isHeads ? 0 : 180);
+        coinInner.style.transition = 'transform 2s cubic-bezier(0.2, 0.8, 0.3, 1)';
+        coinInner.style.transform = `rotateY(${deg}deg)`;
+        setTimeout(() => { coinBtn.classList.remove('flipping'); resolveCoinFlip(isHeads); }, 2100);
+    }
+
+    function showDamage(uid, dmg, type = 'normal', isUltimate = false, attackerUid = null) {
+        const target = document.getElementById(uid);
+        if(!target) return;
+        const rect = target.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        let sx = window.innerWidth / 2;
+        let sy = window.innerHeight / 2;
+
+        if (attackerUid) {
+            const attackerEl = document.getElementById(attackerUid);
+            if (attackerEl) {
+                const aRect = attackerEl.getBoundingClientRect();
+                sx = aRect.left + aRect.width / 2;
+                sy = aRect.top + aRect.height / 2;
+            }
+        }
+        const popDelay = isUltimate ? (type === 'electric' ? 200 : 700) : 0;
+        if (dmg > 0) {
+            if (isUltimate) triggerUltimateHit(cx, cy, type, dmg, sx, sy);
+            else triggerModernHit(cx, cy, type, dmg);
+        }
+        setTimeout(() => {
+            const pop = document.createElement('div');
+            pop.className = 'damage-pop';
+            pop.textContent = dmg > 0 ? `-${dmg}` : "MISS";
+            pop.style.left = `${cx}px`;
+            pop.style.top = `${cy}px`;
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 1000);
+        }, popDelay);
+    }
+
+    // --- 遊戲邏輯與卡牌陣列 (64張) ---
+    const POKEMON_DB=[
+        {id:1,name:"妙蛙種子",type:"grass",hp:70,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"藤鞭",d:20,cost:["grass"]},{n:"飛葉快刀",d:40,cost:["grass","grass"]}]},
+        {id:2,name:"妙蛙草",type:"grass",hp:100,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"寄生種子",d:30,cost:["grass","any"],special:"heal_self_20",desc:"恢復自己20HP"},{n:"劇毒之鞭",d:50,cost:["grass","grass","any"],special:"poison_flip",desc:"硬幣正面使對手中毒"}]},
+        {id:3,name:"妙蛙花",type:"grass",hp:150,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"陽光烈焰",d:70,cost:["grass","grass","any"]},{n:"瘋狂植物",d:130,cost:["grass","grass","grass","any"],special:"cant_act_next",desc:"該寶可夢下回合無法使用招式"}]},
+        {id:4,name:"小火龍",type:"fire",hp:60,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"抓",d:20,cost:["any"]},{n:"火花",d:40,cost:["fire","any"]}]},
+        {id:5,name:"火恐龍",type:"fire",hp:90,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"火焰牙",d:50,cost:["fire","fire"]},{n:"噴射火焰",d:70,cost:["fire","fire","any"]}]},
+        {id:6,name:"噴火龍",type:"fire",hp:150,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"空氣斬",d:60,cost:["fire","fire","any"]},{n:"大字爆炎",d:140,cost:["fire","fire","fire","any"],special:"discard_2_fire",desc:"使用完喪失2個火能量"}]},
+        {id:7,name:"傑尼龜",type:"water",hp:70,weakness:"grass",resistance:{type:"fire",val:20},attacks:[{n:"縮入殼中",d:10,cost:["water"],special:"immune_next_flip",desc:"硬幣正面下回合免傷"},{n:"水槍",d:30,cost:["water","any"]}]},
+        {id:8,name:"卡咪龜",type:"water",hp:90,weakness:"grass",resistance:{type:"fire",val:20},attacks:[{n:"水之波動",d:50,cost:["water","water"]},{n:"火箭頭槌",d:70,cost:["water","water","any"],special:"reduce_dmg_taken_flip",desc:"硬幣正面下回合受傷-30"}]},
+        {id:9,name:"水箭龜",type:"water",hp:150,weakness:"grass",resistance:{type:"fire",val:20},attacks:[{n:"堅硬甲殼",d:0,cost:["water","water","any"],special:"reduce_dmg_taken_50",desc:"下回合受傷-50"},{n:"加農水炮",d:130,cost:["water","water","water","any"],special:"dmg_flip",desc:"需擲幣正面成功"}]},
+        {id:133,name:"伊布",type:"normal",hp:60,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"咬",d:20,cost:["any"]},{n:"突擊",d:40,cost:["any","any"]}]},
+        {id:134,name:"水伊布",type:"water",hp:120,weakness:"electric",resistance:{type:"fire",val:20},attacks:[{n:"水槍",d:30,cost:["water","any"]},{n:"泡沫吸取",d:60,cost:["water","water","any"],special:"heal_self_30",desc:"恢復自己30HP"}]},
+        {id:135,name:"雷伊布",type:"electric",hp:120,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"二連擊",d:20,cost:["electric","electric"],special:"flip_2_x20",desc:"擲2次硬幣，正面次數x20"},{n:"十萬伏特",d:90,cost:["electric","electric","any"],special:"discard_1_elec_and_paralyze",desc:"棄1電能，對手必定麻痺"}]},
+        {id:136,name:"火伊布",type:"fire",hp:130,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"破壞火",d:30,cost:["fire","fire"],special:"discard_enemy_energy_flip",desc:"硬幣正面丟棄對手1能量"},{n:"火焰旋渦",d:100,cost:["fire","fire","any"],special:"self_dmg_20",desc:"自傷20點"}]},
+        {id:196,name:"太陽伊布",type:"normal",hp:120,weakness:"none",resistance:{type:"normal",val:20},attacks:[{n:"念力",d:40,cost:["any","any"],special:"paralyze_flip",desc:"硬幣正面麻痺"},{n:"精神強念",d:80,cost:["fire","any","any"]}]},
+        {id:197,name:"月亮伊布",type:"normal",hp:140,weakness:"none",resistance:{type:"normal",val:20},attacks:[{n:"大聲咆哮",d:30,cost:["any","any"]},{n:"月色幻想",d:70,cost:["electric","any","any"],special:"confuse_flip",desc:"硬幣正面對手混亂"}]},
+        {id:470,name:"葉伊布",type:"grass",hp:120,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"葉子防守",d:40,cost:["grass","grass"],special:"reduce_dmg_taken_30",desc:"下回合受傷-30"},{n:"葉刃",d:90,cost:["grass","grass","any"]}]},
+        {id:471,name:"冰伊布",type:"water",hp:130,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"雪隱",d:30,cost:["water","water"],special:"immune_next_flip",desc:"硬幣正面下回合免傷"},{n:"冰凍光束",d:100,cost:["water","water","water"],special:"asleep_flip",desc:"硬幣正面對手睡眠"}]},
+        {id:700,name:"仙子伊布",type:"normal",hp:130,weakness:"none",resistance:{type:"normal",val:20},attacks:[{n:"魅惑之聲",d:40,cost:["any","any"],special:"confuse",desc:"對手必定混亂"},{n:"月亮之力",d:60,cost:["electric","any","any"],special:"enemy_dmg_minus_30",desc:"下回合對手攻擊力-30"}]},
+        {id:143,name:"卡比獸",type:"normal",hp:150,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"扣殺抽出",d:30,cost:["any","any"],special:"draw_1",desc:"抽1張卡"},{n:"泰山壓頂",d:100,cost:["grass","any","any","any"],special:"asleep_self",desc:"使用完自己陷入睡眠"}]},
+        {id:94,name:"耿鬼",type:"normal",hp:110,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"毒瓦斯",d:20,cost:["any","any"],special:"poison",desc:"必定中毒"},{n:"漆黑",d:60,cost:["grass","any","any"],special:"confuse_flip",desc:"硬幣正面對手混亂"}]},
+        {id:37,name:"六尾",type:"fire",hp:60,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"鬼火",d:20,cost:["fire"],special:"burn_flip",desc:"硬幣正面對手灼傷"},{n:"奇異之光",d:40,cost:["fire","fire","any"],special:"confuse",desc:"對手必定混亂"}]},
+        {id:38,name:"九尾",type:"fire",hp:140,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"熱風",d:30,cost:["fire","any"],special:"burn",desc:"對手必定灼傷"},{n:"灼熱氣息",d:130,cost:["fire","fire","fire","any"],special:"cant_act_next",desc:"該寶可夢下回合無法使用招式"}]},
+        {id:43,name:"走路草",type:"grass",hp:60,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"催眠粉",d:10,cost:["grass"],special:"asleep",desc:"對手必定睡眠"},{n:"麻痺粉",d:40,cost:["grass","any"],special:"paralyze_flip",desc:"硬幣正面麻痺"}]},
+        {id:44,name:"臭臭花",type:"grass",hp:80,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"溶解液",d:20,cost:["grass","any"],special:"poison",desc:"必定中毒"},{n:"誘導香氣",d:0,cost:["grass","any","any"],special:"force_swap_choose",desc:"選擇對手後備與戰鬥互換"}]},
+        {id:54,name:"可達鴨",type:"water",hp:60,weakness:"grass",resistance:{type:"fire",val:20},attacks:[{n:"水槍",d:20,cost:["water"]},{n:"念力",d:20,cost:["water","any"],special:"confuse",desc:"對手必定混亂"}]},
+        {id:55,name:"哥達鴨",type:"water",hp:100,weakness:"grass",resistance:{type:"fire",val:20},attacks:[{n:"衝浪",d:60,cost:["water","any"]},{n:"水炮",d:70,cost:["water","water","any"],special:"plus_dmg_per_water",desc:"每多1水+10傷害"}]},
+        {id:52,name:"喵喵",type:"normal",hp:60,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"聚寶功",d:20,cost:["any"],special:"draw_1",desc:"抽1張卡"},{n:"亂抓",d:20,cost:["any","any"],special:"flip_3_x20",desc:"擲3次硬幣，正面次數x20"}]},
+        {id:39,name:"胖丁",type:"normal",hp:60,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"唱歌",d:10,cost:["any"],special:"asleep",desc:"對手必定睡眠"},{n:"連環巴掌",d:30,cost:["any","any"],special:"flip_2_x30",desc:"擲2次硬幣，正面次數x30"}]},
+        {id:45,name:"霸王花",type:"grass",hp:130,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"麻痺粉",d:30,cost:["grass","any"],special:"paralyze_flip",desc:"硬幣正面麻痺"},{n:"超級吸取",d:50,cost:["grass","grass","any"],special:"heal_self_30",desc:"恢復自己30 HP"}]},
+        {id:83,name:"大蔥鴨",type:"normal",hp:70,weakness:"electric",resistance:{type:"none",val:0},attacks:[{n:"突擊",d:20,cost:["any"]},{n:"碎岩",d:30,cost:["any","any"],special:"damage_flip_30",desc:"硬幣正面+30傷害"}]},
+        {id:130,name:"暴鯉龍",type:"water",hp:130,weakness:"electric",resistance:{type:"fire",val:20},attacks:[{n:"咬碎",d:40,cost:["water","water"]},{n:"破壞光線",d:100,cost:["water","water","any","any"],special:"discard_enemy_energy",desc:"丟棄對手1個能量"}]},
+        {id:149,name:"快龍",type:"normal",hp:150,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"龍爪",d:50,cost:["any","any"]},{n:"流星群",d:70,cost:["water","any","any"]}]},
+        {id:448,name:"路卡利歐",type:"electric",hp:110,weakness:"fire",resistance:{type:"normal",val:20},attacks:[{n:"真空波",d:40,cost:["any","any"]},{n:"波導彈",d:90,cost:["electric","any","any"],special:"damage_flip_30",desc:"硬幣正面傷害+30"}]},
+        {id:835,name:"來電汪",type:"electric",hp:70,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"搖尾巴",d:10,cost:["any"]},{n:"臉頰摩擦",d:30,cost:["electric","any"],special:"paralyze_flip",desc:"硬幣正面對手麻痺"}]},
+        {id:815,name:"閃焰王牌",type:"fire",hp:140,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"二連踢",d:50,cost:["fire","any"]},{n:"火焰球",d:120,cost:["fire","fire","any"],special:"discard_2_fire",desc:"使用後喪失2個火能量"}]},
+        {id:818,name:"千面避役",type:"water",hp:130,weakness:"electric",resistance:{type:"fire",val:20},attacks:[{n:"狙擊",d:40,cost:["water","any"]},{n:"狙擊水槍",d:80,cost:["water","water","any"],special:"discard_enemy_energy_flip",desc:"硬幣正面丟棄對手1能量"}]},
+        {id:812,name:"轟擂金剛猩",type:"grass",hp:150,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"鼓打",d:50,cost:["grass","any"]},{n:"木槌",d:130,cost:["grass","grass","grass","any"],special:"self_dmg_20",desc:"自己受到20傷害"}]},
+        
+        // --- 最新擴充與精準修正 (23張) ---
+        {id:25,name:"皮卡丘",type:"electric",hp:100,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"高速移動",d:30,cost:["electric"],special:"immune_next_flip",desc:"正面則下回合免傷"},{n:"十萬伏特",d:100,cost:["electric","electric","electric"]}]},
+        {id:151,name:"夢幻",type:"normal",hp:130,weakness:"none",resistance:{type:"any",val:20},attacks:[{n:"超感知",d:40,cost:["any","any"],special:"draw_1",desc:"抽 1 張卡"},{n:"變身",d:0,cost:["fire","electric","any","any"],special:"transform_choose",desc:"複製對手及其能量，回後備後恢復自己60HP"}]},
+        {id:77,name:"小火馬",type:"fire",hp:60,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"踩踏",d:20,cost:["any"]},{n:"蓄能焰襲",d:30,cost:["fire","any"],special:"burn_flip",desc:"正面對手灼傷"}]},
+        {id:78,name:"烈焰馬",type:"fire",hp:100,weakness:"water",resistance:{type:"grass",val:20},attacks:[{n:"烈焰濺射",d:50,cost:["fire","fire"]},{n:"大字爆炎",d:90,cost:["fire","fire","any"],special:"discard_1_fire",desc:"喪失1火能量"}]},
+        {id:869,name:"霜奶仙",type:"normal",hp:90,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"裝飾",d:0,cost:["any"],special:"draw_1",desc:"抽 1 張卡"},{n:"魔法閃耀",d:50,cost:["any","any"],special:"confuse_flip",desc:"正面對手混亂"}]},
+        {id:131,name:"拉普拉斯",type:"water",hp:120,weakness:"electric",resistance:{type:"none",val:0},attacks:[{n:"冰礫",d:20,cost:["water"]},{n:"冰凍光束",d:80,cost:["water","water","any"],special:"asleep_flip",desc:"正面對手睡眠"}]},
+        {id:810,name:"敲音猴",type:"grass",hp:60,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"抓",d:20,cost:["any"]},{n:"木枝突刺",d:30,cost:["grass","any"]}]},
+        {id:755,name:"睡睡菇",type:"grass",hp:60,weakness:"fire",resistance:{type:"water",val:20},attacks:[{n:"閃爍",d:10,cost:["grass"],special:"asleep_flip",desc:"正面對手睡眠"},{n:"吸取",d:20,cost:["grass","any"],special:"heal_self_20",desc:"恢復自己20HP"}]},
+        {id:350,name:"美納斯",type:"water",hp:120,weakness:"electric",resistance:{type:"none",val:0},attacks:[{n:"水之波動",d:40,cost:["water","any"],special:"asleep_flip",desc:"正面對手睡眠"},{n:"龍捲風",d:80,cost:["water","water","any"],special:"confuse_flip",desc:"正面對手混亂"}]},
+        {id:883,name:"腮魚海獸",type:"water",hp:130,weakness:"electric",resistance:{type:"none",val:0},attacks:[{n:"冰凍牙",d:40,cost:["water","water"],special:"paralyze_flip",desc:"正面對手麻痺"},{n:"凍寒咬",d:90,cost:["water","water","any"]}]},
+        {id:12,name:"巴大蝶",type:"grass",hp:110,weakness:"fire",resistance:{type:"none",val:0},attacks:[{n:"毒粉",d:20,cost:["grass"],special:"poison",desc:"必定中毒"},{n:"起風",d:50,cost:["any","any"]}]},
+        {id:572,name:"奇諾栗鼠",type:"normal",hp:90,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"掃尾拍打",d:20,cost:["any","any"],special:"flip_2_x20",desc:"擲2次幣正面次數x20"},{n:"幫助",d:40,cost:["grass","any","any"],special:"draw_2",desc:"抽 2 張卡"}]},
+        {id:623,name:"泥偶巨人",type:"normal",hp:140,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"鐵壁",d:0,cost:["any","any"],special:"reduce_dmg_taken_50",desc:"下回合受傷-50"},{n:"暗影拳",d:60,cost:["water","any","any"],special:"ignore_resistance",desc:"無視敵方減傷與抗性"}]},
+        {id:877,name:"莫魯貝可",type:"electric",hp:110,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"餓肚子",d:10,cost:["any"],special:"draw_1",desc:"抽 1 張卡"},{n:"氣場輪",d:50,cost:["electric","electric"],special:"paralyze_flip",desc:"正面對手麻痺"}]},
+        {id:828,name:"狐大盜",type:"normal",hp:100,weakness:"none",resistance:{type:"normal",val:20},attacks:[{n:"偷襲",d:30,cost:["any"]},{n:"大聲咆哮",d:60,cost:["any","any"],special:"enemy_dmg_minus_30",desc:"下回合敵方攻擊-30"}]},
+        {id:461,name:"馬狃拉",type:"normal",hp:100,weakness:"fire",resistance:{type:"none",val:0},attacks:[{n:"毒爪",d:30,cost:["any"],special:"poison",desc:"必定中毒"},{n:"暗襲要害",d:70,cost:["any","any"]}]},
+        {id:884,name:"鋁鋼龍",type:"normal",hp:130,weakness:"fire",resistance:{type:"grass",val:20},attacks:[{n:"龍爪",d:50,cost:["any","any"]},{n:"加農光炮",d:110,cost:["any","any","any"],special:"cant_act_next",desc:"該寶可夢下回合無法使用招式"}]},
+        {id:858,name:"布莉姆溫",type:"normal",hp:140,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"冥想",d:10,cost:["any"],special:"calm_mind_20",desc:"下回自己傷害+20且受傷-20"},{n:"精神強念",d:90,cost:["water","water","any"],special:"cant_act_next",desc:"該寶可夢下回合無法使用招式"}]},
+        {id:282,name:"沙奈朵",type:"normal",hp:140,weakness:"none",resistance:{type:"normal",val:20},attacks:[{n:"魔法閃耀",d:50,cost:["any","any"],special:"confuse_flip",desc:"正面對手混亂"},{n:"封印",d:80,cost:["grass","grass","any","any"],special:"seal_attack",desc:"喪失1能，敵方下回合無法攻擊"}]},
+        {id:475,name:"艾路雷朵",type:"normal",hp:140,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"劈開",d:50,cost:["any","any"]},{n:"近身戰",d:120,cost:["any","any","any"],special:"self_dmg_20",desc:"自己受到20傷害"}]},
+        {id:701,name:"摔角鷹人",type:"normal",hp:80,weakness:"electric",resistance:{type:"none",val:0},attacks:[{n:"飛身重壓",d:30,cost:["any"]},{n:"勇鳥猛攻",d:70,cost:["any","any"],special:"self_dmg_20",desc:"自己受到20傷害"}]},
+        {id:865,name:"蔥遊兵",type:"normal",hp:110,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"狂舞揮打",d:50,cost:["any","any"]},{n:"流星突擊",d:130,cost:["any","any","any"],special:"cant_act_next",desc:"該寶可夢下回合無法使用招式"}]},
+        {id:820,name:"藏飽栗鼠",type:"normal",hp:120,weakness:"none",resistance:{type:"none",val:0},attacks:[{n:"咬住",d:30,cost:["any","any"]},{n:"泰山壓頂",d:80,cost:["any","any","any"],special:"paralyze_flip",desc:"正面對手麻痺"}]}
+    ];
+    
+    const TRAINERS_DB=[
+        {id:"potion",name:"傷藥",icon:"💊",desc:"回復一隻寶可夢 30 HP",target:"ally"},
+        {id:"super_potion",name:"好傷藥",icon:"🧪",desc:"回復一隻寶可夢 50 HP",target:"ally"},
+        {id:"full_heal",name:"萬能藥",icon:"🌿",desc:"解除戰鬥寶可夢所有異常狀態",target:"active_ally"},
+        {id:"switch",name:"交替",icon:"🔄",desc:"與後備交換(解除異常狀態)",target:"bench"},
+        {id:"energy_search",name:"能量搜索",icon:"🔍",desc:"隨機獲得 2 張能量卡",target:"none"},
+        {id:"pokemon_catcher",name:"捕捉器",icon:"🪤",desc:"擲硬幣，正面則強制替換對手戰鬥寶可夢",target:"enemy_bench"},
+        {id:"rescue_stretcher",name:"擔架",icon:"🚑",desc:"從陣亡區復活一隻寶可夢至後備區(恢復半血)",target:"dead_ally"},
+        {id:"boss_orders",name:"老大指令",icon:"🗣️",desc:"無須擲幣，強制將對手一隻後備寶可夢拖至戰鬥區",target:"enemy_bench"},
+        {id:"prof_research",name:"博士研究",icon:"🔬",desc:"捨棄現有手牌，重新抽取 3 張卡",target:"none"},
+        {id:"muscle_band",name:"力量頭帶",icon:"💪",desc:"我方戰鬥寶可夢攻擊力+20，持續2回合",target:"active_ally"},
+        {id:"focus_sash",name:"氣勢披帶",icon:"🎗️",desc:"滿血時若受致命傷，保留10HP不氣絕(觸發後棄置)",target:"active_ally"}
+    ];
+
+    let state = {
+        questions: [], qIdx: 0, currentTeam: 1, step: 'quiz', selectedHandItem: null, hasAttachedEnergyThisTurn: false,
+        pendingAttack: null, pendingCatcherTarget: null, eotFlips: [], coinFlipReason: '',
+        coinFlipsQueue: 0, coinFlipsResults: 0, transformingPokemon: null, isAttacking: false, redrawsLeft: 2,
+        nextTurnTeam: null,
+        teams: { 1: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0 }, 2: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0 } }
+    };
+
+    function getSmartEnergyType(team) {
+        let pool = new Set();
+        team.pokemon.filter(p => p.currHp > 0).forEach(p => {
+            pool.add(p.type);
+            p.attacks.forEach(atk => { atk.cost.forEach(c => { if (c !== 'any') pool.add(c); }); });
+        });
+        let poolArr = Array.from(pool);
+        if (poolArr.length === 0) poolArr = ['normal'];
+        let chosen = poolArr[Math.floor(Math.random() * poolArr.length)];
+        if (Math.random() < 0.15) chosen = 'rainbow'; 
+        return chosen;
+    }
+
+    function drawCard(team, cardData) {
+        if (team.hand.length < 7) { team.hand.push(cardData); return true; } 
+        else { addLog(`⚠️ 手牌已滿 (上限7張)，無法抽取新卡。`); return false; }
+    }
+
+    function generateTeams() {
+        let isBalanced = false;
+        let attempts = 0;
+        while (!isBalanced && attempts < 100) {
+            for(let t=1; t<=2; t++) {
+                const pool = [...POKEMON_DB].sort(() => Math.random() - 0.5);
+                state.teams[t].pokemon = pool.slice(0, 5).map((p, i) => ({
+                    ...p, currHp: p.hp, attachedEnergy: [], uid: `t${t}_${i}`,
+                    status: { poison: false, paralyze: false, burn: false, asleep: false, confused: false, immune_next: false, reduce_dmg_20: false, reduce_dmg_30: false, reduce_dmg_50: false, cant_attack: 0, enemy_dmg_minus_30: 0 },
+                    buff: { dmg: 0, turns: 0, hasFocusSash: false }, isDead: false
+                }));
+                state.teams[t].hand = []; state.teams[t].lostLives = 0;
+            }
+            const hp1 = state.teams[1].pokemon.reduce((sum, p) => sum + p.hp, 0);
+            const hp2 = state.teams[2].pokemon.reduce((sum, p) => sum + p.hp, 0);
+            attempts++;
+            if (Math.abs(hp1 - hp2) <= 80 || attempts >= 50) isBalanced = true; 
+        }
+    }
+
+    function initGame() {
+        const input = document.getElementById('qInput').value.trim();
+        if(!input) return showAlert("請輸入題目！");
+        state.questions = input.split('/').map(s => s.trim()).filter(s => s);
+        state.redrawsLeft = 2;
+        
+        generateTeams();
+        
+        document.getElementById('lobby').classList.add('hidden');
+        document.getElementById('battle-field').classList.remove('hidden');
+        
+        state.step = 'setup';
+        addLog(`🎲 請確認雙方陣容，可選擇重抽卡牌或決定先攻方。`);
+        render();
+    }
+
+    function redrawCards() {
+        if(state.redrawsLeft > 0) {
+            state.redrawsLeft--;
+            generateTeams();
+            addLog(`🔄 已重新發放雙方卡牌。剩餘調度次數：${state.redrawsLeft}`);
+            render();
+        }
+    }
+
+    function startGame(firstTeam) {
+        state.currentTeam = firstTeam;
+        addLog(`⚔️ 對戰正式開始！由 TEAM ${state.currentTeam} 先攻！率先擊敗對手 3 隻寶可夢獲勝。`);
+        startQuiz();
+    }
+
+    function formatQuestion(text) {
+        text = text.replace(/[‘’]/g, "'").replace(/(\w)'\s+([a-zA-Z])/g, "$1'$2"); 
+        let body = text; let options = [];
+        if(text.includes('(1)') && text.includes('(2)') && text.includes('(3)') && text.includes('(4)')) {
+            body = text.substring(0, text.indexOf('(1)')).trim();
+            options.push(text.substring(text.indexOf('(1)'), text.indexOf('(2)')).trim());
+            options.push(text.substring(text.indexOf('(2)'), text.indexOf('(3)')).trim());
+            options.push(text.substring(text.indexOf('(3)'), text.indexOf('(4)')).trim());
+            options.push(text.substring(text.indexOf('(4)')).trim());
+        }
+        let qPart = body; let aPart = '';
+        if (body.includes('Q:') && body.includes('A:')) {
+            qPart = body.substring(0, body.indexOf('A:')).trim();
+            aPart = body.substring(body.indexOf('A:')).trim();
+        }
+        if (options.length > 0) {
+            return `<div class="question-formatted"><div class="question-body"><div class="question-q">${qPart}</div>${aPart ? `<div class="question-a">${aPart}</div>` : ''}</div>${options.map(opt => `<div class="question-option">${opt}</div>`).join('')}</div>`;
+        }
+        if (aPart) return `<div class="question-formatted" style="text-align: center;"><div class="question-body"><div class="question-q">${qPart}</div><div class="question-a">${aPart}</div></div></div>`;
+        return `<div style="text-align:center; font-size:28px; line-height:1.5;">${text}</div>`;
+    }
+
+    function startQuiz() {
+        const myTeam = state.teams[state.currentTeam];
+        const activeP = myTeam.pokemon[myTeam.activeIdx];
+        const aliveBench = myTeam.pokemon.filter((p, idx) => idx !== myTeam.activeIdx && p.currHp > 0);
+
+        if(activeP.currHp <= 0) {
+            if(aliveBench.length === 0) {
+                if(!checkGameOver()) { showVictory(state.currentTeam === 1 ? 2 : 1); }
+                return;
+            }
+            state.step = 'must_swap'; updateHint("⚠️ 戰鬥寶可夢已氣絕！請點擊後備區寶可夢上場。"); render();
+            return;
+        }
+
+        activeP.status.immune_next = false; activeP.status.reduce_dmg_20 = false; activeP.status.reduce_dmg_30 = false; activeP.status.reduce_dmg_50 = false;
+
+        if(activeP.status.cant_attack > 0) {
+            addLog(`🚫 ${activeP.name} 受招式副作用影響，本回合無法攻擊！(但可使用道具或撤退)`);
+        }
+
+        state.step = 'quiz'; state.selectedHandItem = null; state.isAttacking = false;
+        
+        const coinInner = document.getElementById('coin-inner');
+        coinInner.style.transition = 'none'; coinInner.style.transform = 'rotateY(0deg)';
+        
+        document.getElementById('modal-team-name').innerHTML = `<span style="color: #ffcb05; font-size: 36px; text-shadow: 0 0 10px rgba(255,203,5,0.5);">Team ${state.currentTeam}</span>`;
+        document.getElementById('quiz-text').innerHTML = formatQuestion(state.questions[state.qIdx % state.questions.length]);
+        document.getElementById('quiz-modal').style.display = 'flex';
+        updateHint("答對題目即可獲得資源並進行行動！"); render();
+    }
+
+    function checkAnswer(correct) {
+        document.getElementById('quiz-modal').style.display = 'none'; state.qIdx++;
+
+        if(correct) {
+            state.step = 'action'; state.hasAttachedEnergyThisTurn = false;
+            const myTeam = state.teams[state.currentTeam];
+            const givenEnergy = getSmartEnergyType(myTeam);
+            
+            if (drawCard(myTeam, { cardType: 'energy', type: givenEnergy })) { addLog(`✅ 答對了！獲得 1 張 [${getTypeName(givenEnergy)}] 能量卡。`); }
+            if(Math.random() < 0.4) {
+                const trainer = TRAINERS_DB[Math.floor(Math.random() * TRAINERS_DB.length)];
+                if (drawCard(myTeam, { cardType: 'trainer', ...trainer })) addLog(`🎁 額外獲得訓練家卡：「${trainer.name}」！`);
+            }
+            updateHint("請點擊手牌使用，或選擇招式攻擊 (攻擊後回合結束)。\n🔍 點選左上角放大鏡可查看詳細。");
+        } else {
+            addLog(`❌ 答錯了，無法獲得資源，回合結束。`); setTimeout(processEndOfTurn, 1000);
+        }
+        render();
+    }
+
+    function selectHandCard(idx) {
+        if(state.step !== 'action' || state.isAttacking) return;
+        const myTeam = state.teams[state.currentTeam]; const card = myTeam.hand[idx];
+
+        if(state.selectedHandItem && state.selectedHandItem.index === idx) {
+            state.selectedHandItem = null; updateHint("已取消選取。");
+        } else {
+            state.selectedHandItem = { index: idx, data: card };
+            if(card.cardType === 'energy') {
+                if(state.hasAttachedEnergyThisTurn) { return showAlert("每回合只能附著 1 張能量卡！"); }
+                updateHint("請點擊場上任一隻寶可夢來附著能量。");
+            } else if (card.cardType === 'trainer') {
+                if(card.target === 'none') useTrainerCard(null, null);
+                else if(card.target === 'ally') updateHint(`請點擊我方一隻寶可夢使用「${card.name}」。`);
+                else if(card.target === 'active_ally') updateHint(`請點擊我方戰鬥寶可夢使用「${card.name}」。`);
+                else if(card.target === 'bench') updateHint(`請點擊我方後備區寶可夢與前台交換。`);
+                else if(card.target === 'dead_ally') updateHint(`請點擊我方陣亡(半透明)的寶可夢將其復活至後備區。`);
+                else if(card.target === 'enemy_bench') updateHint(`請點擊對手後備區的寶可夢。`);
+            }
+        }
+        render();
+    }
+
+    function retreatToBench(team, newIdx) {
+        const oldActive = team.pokemon[team.activeIdx];
+        if(oldActive.currHp > 0) {
+            oldActive.status = { poison: false, paralyze: false, burn: false, asleep: false, confused: false, immune_next: false, reduce_dmg_20: false, reduce_dmg_30: false, reduce_dmg_50: false, cant_attack: 0, enemy_dmg_minus_30: 0 };
+            if (oldActive.originalForm) {
+                oldActive.name = oldActive.originalForm.name; oldActive.hp = oldActive.originalForm.hp;
+                oldActive.currHp = Math.min(oldActive.originalForm.hp, oldActive.currHp + 60); 
+                oldActive.type = oldActive.originalForm.type;
+                oldActive.attacks = oldActive.originalForm.attacks; oldActive.weakness = oldActive.originalForm.weakness;
+                oldActive.resistance = oldActive.originalForm.resistance; oldActive.id = oldActive.originalForm.id;
+                delete oldActive.originalForm; addLog(`✨ 夢幻回到後備區，解除變身並恢復 60 HP！`);
+            }
+        } else {
+             if (oldActive.originalForm) { Object.assign(oldActive, oldActive.originalForm); delete oldActive.originalForm; }
+        }
+        team.activeIdx = newIdx;
+    }
+
+    function clickPokemon(teamNum, pIdx) {
+        if(state.isAttacking) return;
+        const team = state.teams[teamNum]; const p = team.pokemon[pIdx];
+
+        if (p.currHp <= 0) {
+            let isReviving = state.selectedHandItem && state.selectedHandItem.data.target === 'dead_ally' && teamNum === state.currentTeam;
+            if (!isReviving) return;
+        }
+
+        if(state.step === 'must_swap' && teamNum === state.currentTeam && pIdx !== team.activeIdx && p.currHp > 0) {
+            team.pokemon[team.activeIdx].status = { poison: false, paralyze: false, burn: false, asleep: false, confused: false, immune_next: false, reduce_dmg_20: false, reduce_dmg_30: false, reduce_dmg_50: false, cant_attack: 0, enemy_dmg_minus_30: 0 };
+            if(team.pokemon[team.activeIdx].originalForm) {
+                 Object.assign(team.pokemon[team.activeIdx], team.pokemon[team.activeIdx].originalForm);
+                 team.pokemon[team.activeIdx].currHp = 0; delete team.pokemon[team.activeIdx].originalForm;
+            }
+            team.activeIdx = pIdx; addLog(`🔄 ${p.name} 上場接替戰鬥！`);
+            
+            if (state.nextTurnTeam) {
+                checkEotSwaps(); 
+            } else {
+                state.step = 'quiz'; startQuiz(); 
+            }
+            return;
+        }
+
+        if (state.step === 'select_enemy_bench') {
+            if (teamNum !== state.currentTeam && pIdx !== state.teams[teamNum].activeIdx && p.currHp > 0) {
+                retreatToBench(state.teams[teamNum], pIdx);
+                addLog(`💨 誘導香氣生效，強制將 ${p.name} 拖入戰鬥區！`);
+                state.step = 'finished'; render(); setTimeout(processEndOfTurn, 1500);
+            } else { showAlert("請選擇對手後備區存活的寶可夢！"); }
+            return;
+        }
+
+        if (state.step === 'select_transform_target') {
+            if (teamNum !== state.currentTeam && p.currHp > 0) {
+                const attacker = state.transformingPokemon;
+                attacker.originalForm = {
+                    name: attacker.name, hp: attacker.hp, type: attacker.type, attacks: JSON.parse(JSON.stringify(attacker.attacks)),
+                    weakness: attacker.weakness, resistance: attacker.resistance, id: attacker.id
+                };
+                attacker.name = p.name; attacker.hp = p.hp; attacker.type = p.type; attacker.attacks = p.attacks;
+                attacker.weakness = p.weakness; attacker.resistance = p.resistance; attacker.id = p.id;
+                attacker.attachedEnergy = [...p.attachedEnergy];
+                addLog(`✨ 夢幻變身成了對手的 ${p.name}，並複製了其附著能量！(撤退時將恢復60HP並解除變身)`);
+                state.transformingPokemon = null; state.step = 'finished'; render(); setTimeout(processEndOfTurn, 1500);
+            } else { showAlert("請選擇對手場上的寶可夢！"); }
+            return;
+        }
+
+        if(state.step !== 'action') return;
+
+        if(state.selectedHandItem) {
+            const card = state.selectedHandItem.data; let valid = false;
+            
+            if(card.cardType === 'energy' && teamNum === state.currentTeam && p.currHp > 0) valid = true;
+            if(card.target === 'ally' && teamNum === state.currentTeam && p.currHp > 0) valid = true;
+            if(card.target === 'active_ally' && teamNum === state.currentTeam && pIdx === team.activeIdx && p.currHp > 0) valid = true;
+            if(card.target === 'bench' && teamNum === state.currentTeam && pIdx !== team.activeIdx && p.currHp > 0) valid = true;
+            if(card.target === 'dead_ally' && teamNum === state.currentTeam && p.currHp <= 0) valid = true;
+            if(card.target === 'enemy_bench' && teamNum !== state.currentTeam && pIdx !== state.teams[teamNum].activeIdx && p.currHp > 0) valid = true;
+
+            if(!valid) return;
+
+            if(card.cardType === 'energy') {
+                p.attachedEnergy.push(card.type);
+                state.teams[state.currentTeam].hand.splice(state.selectedHandItem.index, 1);
+                state.hasAttachedEnergyThisTurn = true;
+                addLog(`⚡ 為 ${p.name} 附著了 [${getTypeName(card.type)}] 能量。`);
+                state.selectedHandItem = null; updateHint("能量附著完畢，請選擇攻擊或結束回合。"); render();
+            } else if(card.cardType === 'trainer') { useTrainerCard(teamNum, pIdx); }
+            return;
+        }
+
+        if(!state.selectedHandItem && teamNum === state.currentTeam && pIdx !== team.activeIdx && p.currHp > 0) {
+            const activeP = team.pokemon[team.activeIdx];
+            if(activeP.attachedEnergy.length < 1) { return showAlert(`撤退失敗：需要消耗 1 個能量才能撤退！`); }
+            
+            showConfirm(`要消耗 1 個能量將 ${activeP.name} 撤退，換 ${p.name} 上場嗎？`, () => {
+                activeP.attachedEnergy.pop(); retreatToBench(team, pIdx);
+                addLog(`🏃 ${activeP.name} 消耗能量撤退，由 ${p.name} 上場！`); render();
+            });
+            return;
+        }
+    }
+
+    function useTrainerCard(teamNum, targetIdx) {
+        const myTeam = state.teams[state.currentTeam]; const card = state.selectedHandItem.data; let consumed = true;
+        
+        if(card.id === 'pokemon_catcher') {
+            state.pendingCatcherTarget = targetIdx; state.coinFlipReason = 'catcher';
+            document.getElementById('coin-desc').innerHTML = `請為 <b>寶可夢捕捉器</b> 擲硬幣：<br>正面則強制對手替換，反面則失敗。`;
+            const coinInner = document.getElementById('coin-inner');
+            coinInner.style.transition = 'none'; coinInner.style.transform = 'rotateY(0deg)';
+            document.getElementById('coin-modal').style.display = 'flex'; 
+            return; 
+        }
+        
+        if(card.id === 'potion' || card.id === 'super_potion') {
+            const p = myTeam.pokemon[targetIdx];
+            if(p.currHp === p.hp) return showAlert("HP 已經是滿的！");
+            const heal = card.id === 'potion' ? 30 : 50;
+            p.currHp = Math.min(p.hp, p.currHp + heal);
+            addLog(`💊 使用 ${card.name}！${p.name} 回復了 ${heal} HP。`);
+        } 
+        else if(card.id === 'full_heal') {
+            const p = myTeam.pokemon[targetIdx];
+            p.status.poison = false; p.status.paralyze = false; p.status.burn = false; p.status.asleep = false; p.status.confused = false;
+            addLog(`🌿 使用萬能藥！${p.name} 解除了所有異常狀態。`);
+        }
+        else if(card.id === 'switch') { retreatToBench(myTeam, targetIdx); addLog(`🔄 使用交替卡！無消耗將 ${myTeam.pokemon[targetIdx].name} 換上場，並解除所有異常狀態。`); }
+        else if(card.id === 'rescue_stretcher') {
+            const p = myTeam.pokemon[targetIdx];
+            p.currHp = Math.ceil(p.hp / 2); p.isDead = false; 
+            addLog(`🚑 使用救援擔架！${p.name} 從陣亡區復活，並恢復 ${p.currHp} HP！(註：戰敗次數不會減少)`);
+        }
+        else if(card.id === 'boss_orders') {
+            const enemyTeam = state.teams[teamNum]; retreatToBench(enemyTeam, targetIdx);
+            addLog(`🗣️ 使用老大的指令！強制將對手後備區的 ${enemyTeam.pokemon[targetIdx].name} 拖入戰鬥區。`);
+        }
+        else if(card.id === 'muscle_band') {
+            const p = myTeam.pokemon[targetIdx]; p.buff.dmg = 20; p.buff.turns = 2; addLog(`💪 使用力量頭帶！${p.name} 裝備後，接下來 2 回合攻擊力 +20！`);
+        }
+        else if(card.id === 'focus_sash') {
+            const p = myTeam.pokemon[targetIdx]; p.buff.hasFocusSash = true; addLog(`🎗️ 使用氣勢披帶！${p.name} 裝備了披帶，滿血時若受致命傷可保留 10 HP！`);
+        }
+        else if(card.id === 'energy_search') {
+            drawCard(myTeam, { cardType: 'energy', type: getSmartEnergyType(myTeam) });
+            drawCard(myTeam, { cardType: 'energy', type: getSmartEnergyType(myTeam) });
+            addLog(`🔍 使用能量搜索！隨機抽取了 2 張能量卡。`);
+        }
+        else if(card.id === 'prof_research') {
+            addLog(`🔬 使用博士的研究！捨棄手牌，重新抽了 3 張卡。`);
+            myTeam.hand.splice(state.selectedHandItem.index, 1);
+            myTeam.hand = []; 
+            for(let i=0; i<3; i++){
+                if(Math.random() < 0.6) { drawCard(myTeam, { cardType: 'energy', type: getSmartEnergyType(myTeam) }); } 
+                else { const trainer = TRAINERS_DB[Math.floor(Math.random() * TRAINERS_DB.length)]; drawCard(myTeam, { cardType: 'trainer', ...trainer }); }
+            }
+            consumed = false; 
+        }
+
+        if (consumed) { myTeam.hand.splice(state.selectedHandItem.index, 1); }
+        state.selectedHandItem = null; updateHint("訓練家卡使用完畢。"); render();
+    }
+
+    function canUseAttack(pokemon, attack) {
+        let eCopy = [...pokemon.attachedEnergy];
+        let rainbowCount = eCopy.filter(e => e === 'rainbow').length;
+        eCopy = eCopy.filter(e => e !== 'rainbow');
+        for(let costType of attack.cost) {
+            if(costType !== 'any') {
+                let idx = eCopy.indexOf(costType);
+                if(idx !== -1) { eCopy.splice(idx, 1); } 
+                else if (rainbowCount > 0) { rainbowCount--; } 
+                else { return false; }
+            }
+        }
+        let anyCount = attack.cost.filter(c => c === 'any').length;
+        return (eCopy.length + rainbowCount) >= anyCount;
+    }
+
+    function executeAttack(event, teamNum, atkIdx) {
+        if (event) event.stopPropagation(); 
+        
+        if (state.isAttacking) return; 
+        
+        try {
+            if (teamNum !== state.currentTeam) { return showAlert("這不是您的隊伍，無法使用其招式！"); }
+            if (state.step !== 'action') { return showAlert("請先答對題目，或目前無法攻擊！"); }
+            
+            const myTeam = state.teams[state.currentTeam]; 
+            const attacker = myTeam.pokemon[myTeam.activeIdx];
+            
+            if (attacker.status.asleep) { return showAlert("💤 您的寶可夢正在睡眠中，本回合無法攻擊！"); }
+            if (attacker.status.paralyze) { return showAlert("⚡ 您的寶可夢處於麻痺狀態，本回合無法攻擊！"); }
+            if (attacker.status.cant_attack > 0) { return showAlert("🚫 該寶可夢受副作用影響，本回合無法攻擊！請選擇使用道具或撤退。"); }
+            
+            const atk = attacker.attacks[atkIdx];
+            if (!atk) { return showAlert("招式讀取錯誤！"); }
+
+            if (!canUseAttack(attacker, atk)) {
+                return showAlert("能量不足！請確認是否具備指定的屬性能量。");
+            }
+
+            state.isAttacking = true;
+            state.pendingAttack = { attacker, atk, enemyTeamNum: state.currentTeam === 1 ? 2 : 1 };
+
+            if (attacker.status.confused) {
+                state.coinFlipReason = 'confusion';
+                document.getElementById('coin-desc').innerHTML = `<b>${attacker.name}</b> 處於💫混亂狀態！<br>請擲硬幣，若為反面將會攻擊失敗並自傷 30 點！`;
+                const coinInner = document.getElementById('coin-inner');
+                coinInner.style.transition = 'none'; coinInner.style.transform = 'rotateY(0deg)';
+                document.getElementById('coin-modal').style.display = 'flex'; 
+                return;
+            }
+
+            continueAttack();
+
+        } catch (e) {
+            state.isAttacking = false; 
+            showAlert("系統錯誤: " + e.message);
+            addLog("❌ 攻擊發生系統錯誤: " + e.message);
+            console.error(e);
+        }
+    }
+
+    function continueAttack() {
+        const atk = state.pendingAttack.atk;
+        if(atk.special && typeof atk.special === 'string' && atk.special.includes('flip') && !atk.special.startsWith('flip_')) {
+            state.coinFlipReason = 'attack'; let desc = '發動招式附加效果：<br>';
+            if(atk.special === 'paralyze_flip') desc += '若為正面，對手將陷入麻痺狀態！';
+            else if(atk.special === 'poison_flip') desc += '若為正面，對手將陷入中毒狀態！';
+            else if(atk.special === 'burn_flip') desc += '若為正面，對手將陷入灼傷狀態！';
+            else if(atk.special === 'confuse_flip') desc += '若為正面，對手將陷入混亂！';
+            else if(atk.special === 'damage_flip') desc += '若為正面，將造成額外 20 點傷害！';
+            else if(atk.special === 'damage_flip_20') desc += '若為正面，將造成額外 20 點傷害！';
+            else if(atk.special === 'damage_flip_30') desc += '若為正面，將造成額外 30 點傷害！';
+            else if(atk.special === 'immune_next_flip') desc += '若為正面，下回合免受傷害！';
+            else if(atk.special === 'reduce_dmg_taken_flip') desc += '若為正面，下回合受傷-30！';
+            else if(atk.special === 'dmg_flip') desc += '必須為正面才能造成傷害！';
+            else if(atk.special === 'discard_enemy_energy_flip') desc += '若為正面，丟棄對手 1 個能量！';
+            else if(atk.special === 'asleep_flip') desc += '若為正面，對手將陷入睡眠！';
+            else if(atk.special === 'confuse_self_flip') desc += '若為反面，自己將陷入混亂！';
+            
+            document.getElementById('coin-desc').innerHTML = desc;
+            const coinInner = document.getElementById('coin-inner');
+            coinInner.style.transition = 'none'; coinInner.style.transform = 'rotateY(0deg)';
+            document.getElementById('coin-modal').style.display = 'flex';
+        } else if (atk.special === 'flip_3_x20' || atk.special === 'flip_3_x30') {
+            state.coinFlipsQueue = 3; state.coinFlipsResults = 0; promptMultiFlip();
+        } else if (atk.special === 'flip_2_x20' || atk.special === 'flip_2_x30') {
+            state.coinFlipsQueue = 2; state.coinFlipsResults = 0; promptMultiFlip();
+        } else { resolveAttack(null); }
+    }
+
+    function promptMultiFlip() {
+        if (state.coinFlipsQueue > 0) {
+            state.coinFlipReason = 'multi_attack';
+            document.getElementById('coin-desc').innerHTML = `連續擲硬幣攻擊！<br>還有 <b>${state.coinFlipsQueue}</b> 次擲硬幣機會，請擲幣：`;
+            const coinInner = document.getElementById('coin-inner');
+            coinInner.style.transition = 'none'; coinInner.style.transform = 'rotateY(0deg)';
+            document.getElementById('coin-modal').style.display = 'flex';
+        } else { resolveAttack(state.coinFlipsResults); }
+    }
+
+    function resolveCoinFlip(isHeads) {
+        document.getElementById('coin-modal').style.display = 'none'; const reason = state.coinFlipReason;
+        if (reason === 'confusion') {
+            if (isHeads) { addLog(`💫 擲出正面！${state.pendingAttack.attacker.name} 克服混亂，準備發動攻擊。`); continueAttack(); } 
+            else {
+                addLog(`💫 擲出反面！攻擊失敗，${state.pendingAttack.attacker.name} 因混亂而受到 30 點傷害。`);
+                const attacker = state.pendingAttack.attacker; attacker.currHp = Math.max(0, attacker.currHp - 30);
+                showDamage(attacker.uid, 30, attacker.type, false, null);
+                if (attacker.currHp <= 0 && !attacker.isDead) {
+                     attacker.isDead = true; state.teams[state.currentTeam].lostLives++; addLog(`💀 ${attacker.name} 氣絕了！`);
+                     if(checkGameOver()) return;
+                }
+                state.step = 'finished'; state.selectedHandItem = null; state.isAttacking = false; render(); setTimeout(processEndOfTurn, 1500);
+            }
+        } else if (reason === 'catcher') {
+            const myTeam = state.teams[state.currentTeam]; const enemyTeamNum = state.currentTeam === 1 ? 2 : 1; const enemyTeam = state.teams[enemyTeamNum];
+            if (isHeads) { addLog(`🪤 擲出正面！強制對手換上 ${enemyTeam.pokemon[state.pendingCatcherTarget].name}。`); retreatToBench(enemyTeam, state.pendingCatcherTarget); } 
+            else { addLog(`🪤 擲出反面！捕捉器失效。`); }
+            
+            if (state.selectedHandItem) { myTeam.hand.splice(state.selectedHandItem.index, 1); }
+            state.selectedHandItem = null; updateHint("訓練家卡使用完畢。"); render();
+            
+        } else if (reason === 'attack') { resolveAttack(isHeads);
+        } else if (reason === 'multi_attack') {
+            if(isHeads) state.coinFlipsResults++; state.coinFlipsQueue--; promptMultiFlip();
+        } else if (reason === 'burn' || reason === 'asleep') {
+            const flip = state.eotFlips.shift(); const p = state.teams[flip.team].pokemon[flip.pIdx];
+            if (isHeads) {
+                if (reason === 'burn') { p.status.burn = false; addLog(`🔥 擲出正面！${p.name} 解除灼傷。`); }
+                if (reason === 'asleep') { p.status.asleep = false; addLog(`💤 擲出正面！${p.name} 醒來了。`); }
+            } else {
+                if (reason === 'burn') addLog(`🔥 擲出反面！${p.name} 持續灼傷。`);
+                if (reason === 'asleep') addLog(`💤 擲出反面！${p.name} 繼續熟睡。`);
+            }
+            render(); setTimeout(processNextEotFlip, 800);
+        }
+    }
+
+    function resolveAttack(coinResult) {
+        try {
+            const { attacker, atk, enemyTeamNum } = state.pendingAttack;
+            const defender = state.teams[enemyTeamNum].pokemon[state.teams[enemyTeamNum].activeIdx];
+
+            const atkIdx = attacker.attacks.indexOf(atk);
+            const isUltimate = (attacker.hp >= 100 && atkIdx === 1);
+
+            let dmg = atk.d; let logText = `⚔️ ${attacker.name} 使用了「${atk.n}」！`;
+
+            if (atk.special === 'force_swap_choose') {
+                const aliveBench = state.teams[enemyTeamNum].pokemon.filter((p, i) => i !== state.teams[enemyTeamNum].activeIdx && p.currHp > 0);
+                if(aliveBench.length > 0) {
+                    logText += ` (發動誘導香氣，請選擇對手後備寶可夢)`; addLog(logText);
+                    state.step = 'select_enemy_bench'; state.pendingAttack = null; state.isAttacking = false; updateHint("請選擇一隻對手後備區的寶可夢將其拖上戰鬥場！"); render(); return;
+                } else { logText += ` (對手無後備寶可夢，招式無效)`; }
+            }
+            
+            if (atk.special === 'transform_choose') {
+                logText += ` (發動變身，將複製對手招式與附著能量！請選擇對手場上任一寶可夢)`;
+                addLog(logText);
+                state.step = 'select_transform_target'; state.transformingPokemon = attacker; state.pendingAttack = null; state.isAttacking = false; updateHint("請選擇一隻對手場上的寶可夢進行複製！"); render(); return;
+            }
+            
+            if (atk.special === 'confuse_self_flip') {
+                if(coinResult === false) { attacker.status.confused = true; logText += ` [硬幣反面] 自己陷入混亂！`; } 
+                else { logText += ` [硬幣正面] 安全！沒有陷入混亂。`; }
+            }
+
+            if(atk.special === 'damage_flip' && coinResult === true) dmg += 20; 
+            if(atk.special === 'damage_flip_20' && coinResult === true) dmg += 20;
+            if(atk.special === 'damage_flip_30' && coinResult === true) dmg += 30;
+            if(atk.special === 'dmg_flip') { if(coinResult === false) { logText += ' [硬幣: 反面] 攻擊失敗，沒有造成傷害。'; dmg = 0; } }
+            if(atk.special === 'flip_3_x20') { dmg = coinResult * 20; logText += ` [擲出 ${coinResult} 次正面]`; }
+            if(atk.special === 'flip_3_x30') { dmg = coinResult * 30; logText += ` [擲出 ${coinResult} 次正面]`; }
+            if(atk.special === 'flip_2_x20') { dmg = coinResult * 20; logText += ` [擲出 ${coinResult} 次正面]`; }
+            if(atk.special === 'flip_2_x30') { dmg = coinResult * 30; logText += ` [擲出 ${coinResult} 次正面]`; }
+            
+            if(atk.special === 'plus_dmg_per_elec') { let extraElec = attacker.attachedEnergy.filter(e => e === 'electric' || e === 'rainbow').length - 2; if(extraElec > 0) dmg += Math.min(2, extraElec) * 10; }
+            if(atk.special === 'plus_dmg_per_water') { let extraWater = attacker.attachedEnergy.filter(e => e === 'water' || e === 'rainbow').length - 2; if(extraWater > 0) dmg += Math.min(2, extraWater) * 10; }
+
+            if(defender.status.immune_next) { dmg = 0; logText += ` (對手免疫了這次傷害！)`; } 
+            else {
+                if(defender.status.reduce_dmg_20) dmg = Math.max(0, dmg - 20);
+                if(defender.status.reduce_dmg_30) dmg = Math.max(0, dmg - 30);
+                if(defender.status.reduce_dmg_50) dmg = Math.max(0, dmg - 50);
+            }
+            if(attacker.status.enemy_dmg_minus_30 > 0) { dmg = Math.max(0, dmg - 30); logText += ` (受到牽制，傷害-30)`; }
+
+            // 布莉姆溫冥想的加成
+            if(dmg > 0) {
+                if(attacker.buff.turns > 0) dmg += attacker.buff.dmg;
+                let isWeakness = false, isResisted = false;
+                if(defender.weakness === attacker.type) { dmg = Math.floor(dmg * 1.5); isWeakness = true; }
+                
+                if (atk.special !== 'ignore_resistance') {
+                    if(defender.resistance.type === attacker.type || defender.resistance.type === 'any') { dmg -= defender.resistance.val; isResisted = true; }
+                }
+                
+                dmg = Math.max(0, dmg); 
+                if (defender.buff.hasFocusSash && defender.currHp === defender.hp && dmg >= defender.hp) {
+                    dmg = defender.hp - 10; defender.buff.hasFocusSash = false; logText += ` 🎗️ 觸發氣勢披帶！保留了 10 HP！`;
+                }
+                defender.currHp = Math.max(0, defender.currHp - dmg);
+                showDamage(defender.uid, dmg, attacker.type, isUltimate, attacker.uid);
+                logText += `造成 ${dmg} 點傷害！`;
+                if (isWeakness) logText += ' (弱點加成 x1.5！)';
+                if (isResisted) logText += ' (抗性減免！)';
+                if (attacker.buff.turns > 0) logText += ' (裝備加成！)';
+                if (atk.special === 'ignore_resistance') logText += ' (無視抗性與減傷！)';
+            } else if (atk.d > 0) { showDamage(defender.uid, 0, attacker.type, false, attacker.uid); }
+
+            if (atk.special === 'poison') { defender.status.poison = true; logText += ` ☠️ ${defender.name} 中毒了！`; }
+            if (atk.special === 'poison_flip' && coinResult === true) { defender.status.poison = true; logText += ` ☠️ ${defender.name} 中毒了！`; }
+            if (atk.special === 'burn') { defender.status.burn = true; logText += ` 🔥 ${defender.name} 灼傷了！`; }
+            if (atk.special === 'burn_flip' && coinResult === true) { defender.status.burn = true; logText += ` 🔥 ${defender.name} 灼傷了！`; }
+            if (atk.special === 'asleep') { defender.status.asleep = true; logText += ` 💤 ${defender.name} 陷入睡眠！`; }
+            if (atk.special === 'asleep_flip' && coinResult === true) { defender.status.asleep = true; logText += ` 💤 ${defender.name} 陷入睡眠！`; }
+            if (atk.special === 'asleep_self') { attacker.status.asleep = true; logText += ` 💤 (副作用：自己陷入睡眠)`; }
+            if (atk.special === 'confuse') { defender.status.confused = true; logText += ` 💫 ${defender.name} 陷入混亂！`; }
+            if (atk.special === 'confuse_flip' && coinResult === true) { defender.status.confused = true; logText += ` 💫 ${defender.name} 陷入混亂！`; }
+            if (atk.special === 'paralyze_flip' && coinResult === true) { defender.status.paralyze = true; logText += ` ⚡ ${defender.name} 被麻痺了！`; }
+            if (atk.special === 'heal_self_20') { attacker.currHp = Math.min(attacker.hp, attacker.currHp + 20); logText += ` (恢復20HP)`; }
+            if (atk.special === 'heal_self_30') { attacker.currHp = Math.min(attacker.hp, attacker.currHp + 30); logText += ` (恢復30HP)`; }
+            if (atk.special === 'heal_all_30') { state.teams[state.currentTeam].pokemon.forEach(p => { if(p.currHp > 0) p.currHp = Math.min(p.hp, p.currHp + 30); }); logText += ` (己方全體恢復30HP)`; }
+            if (atk.special === 'cant_act_next') { attacker.status.cant_attack = 2; logText += ` (該寶可夢下回合無法使用招式)`; }
+            if (atk.special === 'discard_1_fire') { 
+                let removed = 0; attacker.attachedEnergy = attacker.attachedEnergy.filter(e => { if((e === 'fire' || e === 'rainbow') && removed < 1) { removed++; return false; } return true; });
+                logText += ` (喪失1個火能量)`;
+            }
+            if (atk.special === 'discard_2_fire') { 
+                let removed = 0; attacker.attachedEnergy = attacker.attachedEnergy.filter(e => { if((e === 'fire' || e === 'rainbow') && removed < 2) { removed++; return false; } return true; });
+                logText += ` (喪失2個火能量)`;
+            }
+            if (atk.special === 'immune_next_flip' && coinResult === true) { attacker.status.immune_next = true; logText += ` [硬幣: 正面] 下回合免傷！`; }
+            if (atk.special === 'reduce_dmg_taken_flip' && coinResult === true) { attacker.status.reduce_dmg_30 = true; logText += ` [硬幣: 正面] 下回合受傷-30！`; }
+            if (atk.special === 'reduce_dmg_taken_20') { attacker.status.reduce_dmg_20 = true; }
+            if (atk.special === 'reduce_dmg_taken_30') { attacker.status.reduce_dmg_30 = true; }
+            if (atk.special === 'reduce_dmg_taken_50') { attacker.status.reduce_dmg_50 = true; }
+            if (atk.special === 'self_dmg_20') { attacker.currHp = Math.max(0, attacker.currHp - 20); showDamage(attacker.uid, 20, attacker.type, false, null); logText += ` (自傷20點)`; }
+            if (atk.special === 'self_dmg_30') { attacker.currHp = Math.max(0, attacker.currHp - 30); showDamage(attacker.uid, 30, attacker.type, false, null); logText += ` (自傷30點)`; }
+            if (atk.special === 'draw_1') { drawCard(state.teams[state.currentTeam], { cardType: 'energy', type: 'normal' }); logText += ` (抽了1張卡)`; }
+            if (atk.special === 'draw_2') { drawCard(state.teams[state.currentTeam], { cardType: 'energy', type: 'normal' }); drawCard(state.teams[state.currentTeam], { cardType: 'energy', type: 'normal' }); logText += ` (抽了2張卡)`; }
+            if (atk.special === 'discard_enemy_energy') { if(defender.attachedEnergy.length > 0) { defender.attachedEnergy.pop(); logText += ` (丟棄對手1個能量)`; } }
+            if (atk.special === 'discard_enemy_energy_flip' && coinResult === true) { if(defender.attachedEnergy.length > 0) { defender.attachedEnergy.pop(); logText += ` [硬幣: 正面] (丟棄對手1個能量)`; } }
+            if (atk.special === 'discard_1_elec_and_paralyze') { let removed = false; attacker.attachedEnergy = attacker.attachedEnergy.filter(e => { if((e === 'electric' || e === 'rainbow') && !removed) { removed = true; return false; } return true; }); defender.status.paralyze = true; logText += ` (棄1電能，對手必定麻痺)`; }
+            if (atk.special === 'enemy_dmg_minus_30') { defender.status.enemy_dmg_minus_30 = 2; logText += ` (下回合對手攻擊力-30)`; }
+            
+            // ★ 修正：布莉姆溫的冥想加成
+            if (atk.special === 'calm_mind_20') { attacker.buff.dmg = 20; attacker.buff.turns = 2; attacker.status.reduce_dmg_20 = true; logText += ` (專注冥想，下回攻擊傷害+20且受傷-20！)`; }
+            
+            // ★ 修正：沙奈朵的封印
+            if (atk.special === 'seal_attack') { defender.status.cant_attack = 1; if(attacker.attachedEnergy.length > 0) attacker.attachedEnergy.pop(); logText += ` (自己喪失1能量，對手下回合無法攻擊)`; }
+
+            if (defender.currHp <= 0 && !defender.isDead) { defender.isDead = true; state.teams[enemyTeamNum].lostLives++; logText += ` 💀 敵方 ${defender.name} 氣絕了！`; }
+            if (attacker.currHp <= 0 && !attacker.isDead) { attacker.isDead = true; state.teams[state.currentTeam].lostLives++; logText += ` 💀 我方 ${attacker.name} 氣絕了！`; }
+
+            addLog(logText); 
+            state.step = 'finished'; 
+            state.selectedHandItem = null; 
+            state.isAttacking = false; 
+            render(); 
+            
+            document.getElementById('end-turn-btn').style.display = 'block';
+
+            if (checkGameOver()) return;
+            
+            setTimeout(processEndOfTurn, isUltimate ? 2500 : 1500);
+            
+        } catch (e) {
+            state.isAttacking = false;
+            showAlert("攻擊結算發生錯誤: " + e.message);
+            addLog("❌ 攻擊結算發生錯誤: " + e.message);
+            console.error(e);
+        }
+    }
+
+    function endTurn() { if(state.step === 'action' && !state.isAttacking) processEndOfTurn(); }
+
+    function processEndOfTurn() {
+        let someoneDied = false; state.eotFlips = [];
+        [1, 2].forEach(t => {
+            const activeP = state.teams[t].pokemon[state.teams[t].activeIdx];
+            if (activeP && activeP.currHp > 0) {
+                if (activeP.status.poison) { activeP.currHp = Math.max(0, activeP.currHp - 10); showDamage(activeP.uid, 10, 'poison', false, null); addLog(`☠️ 回合結算：${activeP.name} 因中毒受到 10 點傷害。`); }
+                if (activeP.status.burn) { activeP.currHp = Math.max(0, activeP.currHp - 20); showDamage(activeP.uid, 20, 'fire', false, null); addLog(`🔥 回合結算：${activeP.name} 因灼傷受到 20 點傷害。`); state.eotFlips.push({team: t, pIdx: state.teams[t].activeIdx, type: 'burn'}); }
+                if (activeP.status.asleep) { state.eotFlips.push({team: t, pIdx: state.teams[t].activeIdx, type: 'asleep'}); }
+                if (activeP.currHp <= 0 && !activeP.isDead) { activeP.isDead = true; state.teams[t].lostLives++; someoneDied = true; addLog(`💀 ${activeP.name} 氣絕了！`); }
+            }
+            if(activeP && activeP.buff.turns > 0 && t === state.currentTeam) { activeP.buff.turns--; if(activeP.buff.turns === 0) activeP.buff.dmg = 0; }
+            if(activeP && activeP.status.cant_attack > 0 && t === state.currentTeam) { activeP.status.cant_attack--; }
+            if(activeP && activeP.status.enemy_dmg_minus_30 > 0 && t === state.currentTeam) { activeP.status.enemy_dmg_minus_30--; }
+        });
+
+        const endingTeamActive = state.teams[state.currentTeam].pokemon[state.teams[state.currentTeam].activeIdx];
+        if (endingTeamActive && endingTeamActive.status.paralyze) { endingTeamActive.status.paralyze = false; addLog(`⚡ ${endingTeamActive.name} 的麻痺狀態解除了。`); }
+        
+        if (someoneDied && checkGameOver()) return;
+        
+        setTimeout(processNextEotFlip, 1000);
+    }
+
+    function processNextEotFlip() {
+        if (state.eotFlips.length > 0) {
+            const flip = state.eotFlips[0]; const p = state.teams[flip.team].pokemon[flip.pIdx];
+            if (p.currHp <= 0) { state.eotFlips.shift(); processNextEotFlip(); return; }
+            state.coinFlipReason = flip.type;
+            document.getElementById('coin-desc').innerHTML = flip.type === 'burn' ? `請為 <b>${p.name}</b> 的🔥灼傷恢復擲硬幣：<br>正面則恢復，反面則持續。` : `請為 <b>${p.name}</b> 的💤睡眠恢復擲硬幣：<br>正面則醒來，反面則繼續睡。`;
+            const coinInner = document.getElementById('coin-inner'); coinInner.style.transition = 'none'; coinInner.style.transform = 'rotateY(0deg)';
+            document.getElementById('coin-modal').style.display = 'flex';
+        } else {
+            state.nextTurnTeam = state.currentTeam === 1 ? 2 : 1; 
+            checkEotSwaps(); 
+        }
+    }
+
+    function checkEotSwaps() {
+        let p1 = state.teams[1].pokemon[state.teams[1].activeIdx];
+        let p2 = state.teams[2].pokemon[state.teams[2].activeIdx];
+
+        if (p1.currHp <= 0 && state.teams[1].lostLives < 3) {
+            state.currentTeam = 1;
+            state.step = 'must_swap';
+            updateHint("⚠️ TEAM 1 戰鬥寶可夢已氣絕！請點擊後備區替換。");
+            render();
+            return;
+        }
+        if (p2.currHp <= 0 && state.teams[2].lostLives < 3) {
+            state.currentTeam = 2;
+            state.step = 'must_swap';
+            updateHint("⚠️ TEAM 2 戰鬥寶可夢已氣絕！請點擊後備區替換。");
+            render();
+            return;
+        }
+
+        state.currentTeam = state.nextTurnTeam;
+        state.nextTurnTeam = null; 
+        render();
+        setTimeout(startQuiz, 1000);
+    }
+
+    function checkGameOver() {
+        let t1Dead = state.teams[1].lostLives >= 3;
+        let t2Dead = state.teams[2].lostLives >= 3;
+        
+        if (t1Dead && t2Dead) { showVictory(0); return true; } 
+        if (t1Dead) { showVictory(2); return true; }
+        if (t2Dead) { showVictory(1); return true; }
+        return false;
+    }
+
+    function showVictory(winningTeamNum) {
+        if (winningTeamNum === 0) {
+            document.getElementById('victory-team-text').textContent = `🤝 雙方同時陣亡，平手！ 🤝`;
+        } else {
+            document.getElementById('victory-team-text').textContent = `🏆 TEAM ${winningTeamNum} 獲勝！ 🏆`;
+        }
+        document.getElementById('victory-modal').style.display = 'flex';
+        for(let i=0; i<60; i++) {
+            const conf = document.createElement('div'); conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + 'vw'; conf.style.animationDelay = Math.random() * 3 + 's';
+            conf.style.backgroundColor = ['#f44336', '#2196F3', '#4CAF50', '#FFEB3B', '#E91E63'][Math.floor(Math.random()*5)];
+            document.body.appendChild(conf);
+        }
+    }
+
+    function inspectCard(t, pIdx) {
+        const p = state.teams[t].pokemon[pIdx];
+        const resText = p.resistance.type !== 'none' && p.resistance.val > 0 ? `${getTypeName(p.resistance.type)} -${p.resistance.val}` : '無';
+        let statusHtml = '';
+        if (p.status.poison) statusHtml += '<span class="status-tag status-poison">中毒</span>';
+        if (p.status.burn) statusHtml += '<span class="status-tag status-burn">灼傷</span>';
+        if (p.status.asleep) statusHtml += '<span class="status-tag status-asleep">睡眠</span>';
+        if (p.status.confused) statusHtml += '<span class="status-tag status-confused">混亂</span>';
+        if (p.status.paralyze) statusHtml += '<span class="status-tag status-paralyze">麻痺</span>';
+        if (p.status.immune_next) statusHtml += '<span class="status-tag status-immune">免傷</span>';
+        if (p.status.cant_attack > 0) statusHtml += '<span class="status-tag status-cant-act">無法攻擊</span>';
+        let buffHtml = '';
+        if (p.buff.turns > 0) buffHtml += `<div class="item-tag">💪攻擊+${p.buff.dmg}</div>`;
+        if (p.buff.hasFocusSash) buffHtml += `<div class="item-tag">🎗️氣勢披帶</div>`;
+
+        const cardHtml = `
+            <div class="card type-${p.type}" style="cursor: default;">
+                <div class="card-header">
+                    <div><div style="margin-bottom:5px;">${statusHtml}</div><span style="font-size:18px;">${p.name}</span></div>
+                    <div style="text-align:right;">
+                        <span style="color: ${p.currHp < p.hp*0.3 ? '#ff0000' : '#000'}; font-weight:900;">HP ${p.currHp}/${p.hp}</span>
+                        <div style="display:flex; gap:2px; flex-direction:column; align-items:flex-end; margin-top:2px;">${buffHtml}</div>
+                    </div>
+                </div>
+                <div class="hp-bar" style="height:12px;"><div class="hp-fill" style="width:${(p.currHp/p.hp)*100}%; background:${(p.currHp/p.hp)*100 < 30 ? '#ff4422' : '#4caf50'}"></div></div>
+                <div class="card-img"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png"></div>
+                <div class="energy-container" style="padding: 5px;">已附著: ${p.attachedEnergy.length === 0 ? '無' : p.attachedEnergy.map(e => `<div class="energy-icon energy-${e}"></div>`).join('')}</div>
+                <div style="margin-top:15px; flex:1;">
+                    ${p.attacks.map(atk => {
+                        let costHtml = '';
+                        if (atk.cost.length === 4) { costHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; width:28px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; } 
+                        else { costHtml = `<div style="display:flex; flex-wrap:wrap; max-width:45px; gap:2px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; }
+                        return `<div class="attack-row" style="flex-direction:column; align-items:flex-start;"><div style="display:flex; width:100%; justify-content:space-between; align-items:center;"><div class="attack-cost">${costHtml}</div><span style="flex:1; margin-left:10px; font-weight:bold;">${atk.n}</span><span style="font-size:18px; font-weight:bold;">${atk.d}</span></div>${atk.desc ? `<div style="font-size:11px; color:#444; margin-top:5px;">💡 ${atk.desc}</div>` : ''}</div>`;
+                    }).join('')}
+                </div>
+                <div style="font-size:12px; opacity:0.8; margin-top:15px; display:flex; justify-content:space-between; border-top:1px solid rgba(0,0,0,0.2); padding-top:5px;">
+                    <span>弱點: ${getTypeName(p.weakness)} x1.5</span><span>抗性: ${resText}</span>
+                </div>
+            </div>`;
+        document.getElementById('inspect-content').innerHTML = cardHtml;
+        document.getElementById('inspect-modal').style.display = 'flex';
+    }
+
+    function closeInspect() { document.getElementById('inspect-modal').style.display = 'none'; }
+
+    function render() {
+        const drawSide = (t) => {
+            const team = state.teams[t]; const isMyTurn = (t === state.currentTeam && state.step !== 'setup');
+            document.getElementById(`side-${t}`).className = `team-container ${isMyTurn ? 'active-team' : ''}`;
+            const lives = 3 - team.lostLives; let fireHtml = '';
+            for(let i=0; i<3; i++) { if(i < lives) fireHtml += '<span style="text-shadow: 0 0 5px red;">🔥</span>'; else fireHtml += '<span style="opacity:0.3; filter:grayscale(100%);">🔥</span>'; }
+            
+            document.getElementById(`header-${t}`).innerHTML = `<h2 style="color: #ffcb05; margin:0; text-shadow: 0 0 8px rgba(255,203,5,0.6);">TEAM ${t}</h2><span style="font-size:24px;">${fireHtml}</span>`;
+
+            let actHtml = '', benHtml = '';
+            team.pokemon.forEach((p, pIdx) => {
+                const isActive = (pIdx === team.activeIdx); const hpPer = (p.currHp / p.hp) * 100;
+                let isValidTarget = false;
+                if(isMyTurn && state.selectedHandItem) {
+                    const hCard = state.selectedHandItem.data;
+                    if(hCard.cardType === 'energy' && p.currHp > 0) isValidTarget = true;
+                    if(hCard.target === 'ally' && p.currHp > 0) isValidTarget = true;
+                    if(hCard.target === 'active_ally' && isActive && p.currHp > 0) isValidTarget = true;
+                    if(hCard.target === 'bench' && !isActive && p.currHp > 0) isValidTarget = true;
+                    if(hCard.target === 'dead_ally' && p.currHp <= 0) isValidTarget = true;
+                }
+                if (!isMyTurn && state.step !== 'setup') {
+                    if (state.selectedHandItem && state.selectedHandItem.data.target === 'enemy_bench' && !isActive && p.currHp > 0) isValidTarget = true;
+                    if (state.step === 'select_enemy_bench' && !isActive && p.currHp > 0) isValidTarget = true;
+                    if (state.step === 'select_transform_target' && p.currHp > 0) isValidTarget = true;
+                }
+
+                const resText = p.resistance.type !== 'none' && p.resistance.val > 0 ? `${getTypeName(p.resistance.type)} -${p.resistance.val}` : '無';
+                let statusHtml = '';
+                if (p.status.poison) statusHtml += '<span class="status-tag status-poison">中毒</span>';
+                if (p.status.burn) statusHtml += '<span class="status-tag status-burn">灼傷</span>';
+                if (p.status.asleep) statusHtml += '<span class="status-tag status-asleep">睡眠</span>';
+                if (p.status.confused) statusHtml += '<span class="status-tag status-confused">混亂</span>';
+                if (p.status.paralyze) statusHtml += '<span class="status-tag status-paralyze">麻痺</span>';
+                if (p.status.immune_next) statusHtml += '<span class="status-tag status-immune">免傷</span>';
+                if (p.status.cant_attack > 0) statusHtml += '<span class="status-tag status-cant-act">無法攻擊</span>';
+
+                let buffHtml = '';
+                if (p.buff.turns > 0) buffHtml += `<div class="item-tag">💪攻擊+${p.buff.dmg}</div>`;
+                if (p.buff.hasFocusSash) buffHtml += `<div class="item-tag">🎗️氣勢披帶</div>`;
+
+                const deadClass = p.currHp <= 0 ? (isValidTarget ? 'dead revivable' : 'dead') : '';
+
+                let cardHtml = `
+                    <div class="card type-${p.type} ${isActive ? 'card-active is-active-fighter' : 'card-bench'} ${deadClass} ${isValidTarget && p.currHp>0 ? 'valid-target' : ''}" 
+                         id="${p.uid}" onclick="clickPokemon(${t}, ${pIdx})">
+                        <div class="inspect-btn" onclick="event.stopPropagation(); inspectCard(${t}, ${pIdx})">🔍</div>
+                        <div class="buff-container">${buffHtml}</div>
+                        <div class="card-header" style="margin-left:20px;">
+                            <span>${p.name}</span>
+                            <span style="color: ${hpPer < 30 ? '#ff0000' : '#000'}; font-size:10px; font-weight:900;">HP ${p.currHp}/${p.hp}</span>
+                        </div>
+                        <div class="status-container">${statusHtml}</div>
+                        <div class="hp-bar"><div class="hp-fill" style="width:${Math.max(0, hpPer)}%; background:${hpPer < 30 ? '#ff4422' : '#4caf50'}"></div></div>
+                        <div class="card-img"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png"></div>
+                        <div class="energy-container">${p.attachedEnergy.map(e => `<div class="energy-icon energy-${e}"></div>`).join('')}</div>
+                `;
+
+                if(isActive) {
+                    cardHtml += `<div style="margin-top:5px">
+                        ${p.attacks.map((atk, aIdx) => {
+                            const hasEnergy = canUseAttack(p, atk);
+                            const rowClass = hasEnergy ? 'attack-ready' : 'attack-disabled';
+                            let costHtml = '';
+                            if (atk.cost.length === 4) { costHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; width:28px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; } 
+                            else { costHtml = `<div style="display:flex; flex-wrap:wrap; max-width:45px; gap:2px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; }
+                            return `<div class="attack-row ${rowClass}" onclick="executeAttack(event, ${t}, ${aIdx});">
+                                <div class="attack-cost">${costHtml}</div><span style="flex:1; margin-left:5px; font-weight:bold; white-space:nowrap; overflow:hidden;">${atk.n}${atk.desc ? '<span class="attack-special-icon">✨</span>' : ''}</span><span>${atk.d}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    <div style="font-size:9px; opacity:0.8; margin-top:5px; display:flex; justify-content:space-between;">
+                        <span>弱點: ${getTypeName(p.weakness)} x1.5</span><span>抗性: ${resText}</span>
+                    </div>`;
+                } else {
+                    cardHtml += `<div class="bench-attack-preview">
+                        ${p.attacks.map(atk => {
+                            return `<div>${atk.cost.map(c => `<div class="energy-icon energy-${c}" style="width:8px; height:8px;"></div>`).join('')}</div>`;
+                        }).join('')}
+                    </div>`;
+                }
+
+                cardHtml += `</div>`;
+                
+                if(isActive) { actHtml = `<div class="active-zone">${cardHtml}</div>`; } else { benHtml += cardHtml; }
+            });
+            
+            if (t === 1) { document.getElementById(`field-${t}`).innerHTML = `<div class="bench-grid">${benHtml}</div>${actHtml}`; } 
+            else { document.getElementById(`field-${t}`).innerHTML = `${actHtml}<div class="bench-grid">${benHtml}</div>`; }
+
+            const handDiv = document.getElementById(`hand-${t}`); handDiv.innerHTML = '';
+            team.hand.forEach((card, cIdx) => {
+                const isSelected = (state.selectedHandItem && state.selectedHandItem.index === cIdx);
+                const descText = card.desc ? card.desc.replace(/'/g, "\\'") : '';
+                
+                if(card.cardType === 'energy') {
+                    handDiv.innerHTML += `<div class="hand-card hand-energy energy-${card.type} ${isSelected ? 'selected' : ''}" 
+                        onclick="selectHandCard(${cIdx})"
+                        onmouseenter="showHandTooltip(${t}, '💡 提供 1 個 [${getTypeName(card.type)}] 能量')"
+                        onmouseleave="hideHandTooltip(${t})">
+                        <div class="energy-icon energy-${card.type}" style="width:25px;height:25px;margin-bottom:5px;"></div><div style="color:white;text-shadow:1px 1px 2px #000;">能量</div></div>`;
+                } else {
+                    handDiv.innerHTML += `<div class="hand-card hand-trainer ${isSelected ? 'selected' : ''}" 
+                        onclick="selectHandCard(${cIdx})"
+                        onmouseenter="showHandTooltip(${t}, '💡 ${descText}')"
+                        onmouseleave="hideHandTooltip(${t})">
+                        <div style="font-size:24px; margin-bottom:2px;">${card.icon}</div><div>${card.name}</div></div>`;
+                }
+            });
+        };
+
+        drawSide(1); drawSide(2);
+        
+        const turnInd = document.getElementById('turn-indicator');
+        const actionHint = document.getElementById('action-hint');
+        const setupUI = document.getElementById('setup-ui');
+        const endBtn = document.getElementById('end-turn-btn');
+        
+        if (state.step === 'setup') {
+            turnInd.style.display = 'none';
+            actionHint.style.display = 'none';
+            endBtn.style.display = 'none';
+            setupUI.style.display = 'flex';
+            document.getElementById('btn-redraw').disabled = state.redrawsLeft <= 0;
+            document.getElementById('btn-redraw').textContent = `🔄 重抽卡牌 (${state.redrawsLeft})`;
+        } else {
+            setupUI.style.display = 'none';
+            turnInd.style.display = 'block';
+            actionHint.style.display = 'block';
+            turnInd.textContent = state.step === 'must_swap' ? `⚠️ TEAM ${state.currentTeam} 必須換人！` : `▶ TEAM ${state.currentTeam} 的回合`;
+            turnInd.style.color = state.currentTeam === 1 ? 'var(--team1-color)' : 'var(--team2-color)';
+            endBtn.style.display = state.step === 'action' ? 'block' : 'none';
+        }
+    }
+
+    function getTypeName(eng) { const map = { fire: '火', water: '水', grass: '草', electric: '電', normal: '普', none: '無', poison: '毒', dragon: '龍', psychic: '超能' }; return map[eng] || eng; }
+    function updateHint(txt) { document.getElementById('action-hint').innerText = txt; }
+    function addLog(msg) {
+        const l = document.getElementById('log'); const entry = document.createElement('div'); entry.className = 'log-entry'; entry.textContent = `[系統] ${msg}`;
+        l.insertBefore(entry, l.firstChild); Array.from(l.children).forEach(child => child.style.opacity = '1');
+        if (l.children.length > 8) { l.removeChild(l.lastChild); }
+    }
+</script>
+</body>
+</html>
