@@ -524,16 +524,33 @@
         
         const idMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
         if (idMatch && idMatch[1]) { 
-            // 改用 Google Visualization API，原生支援 CORS，解決本機 HTML (file://) 被阻擋的問題
-            url = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/gviz/tq?tqx=out:csv`; 
+            // 轉為標準 CSV 下載連結
+            url = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv`; 
         }
 
         try {
-            const response = await fetch(url);
-            if(!response.ok) throw new Error("Fetch failed");
-            
-            const text = await response.text();
-            if(text.includes('<html') || text.includes('<!DOCTYPE')) throw new Error("PERMISSION_ERROR");
+            let text = "";
+            try {
+                // 1. 優先嘗試直接連線 (適用於有網域的環境，如 GitHub Pages)
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Direct fetch failed");
+                text = await res.text();
+            } catch (err1) {
+                try {
+                    // 2. 本機端備援方案 A：使用 corsproxy (高穩定性)
+                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+                    if (!res.ok) throw new Error("Proxy 1 failed");
+                    text = await res.text();
+                } catch (err2) {
+                    // 3. 本機端備援方案 B：使用 allorigins 的 JSON API (100% 避開 CORS 阻擋)
+                    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                    if (!res.ok) throw new Error("Proxy 2 failed");
+                    const data = await res.json();
+                    text = data.contents;
+                }
+            }
+
+            if(!text || text.includes('<html') || text.includes('<!DOCTYPE')) throw new Error("PERMISSION_ERROR");
 
             parseCSVData(text);
             if (state.csvQuestions.length === 0) throw new Error("PARSE_ERROR");
