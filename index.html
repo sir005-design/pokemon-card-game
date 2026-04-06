@@ -31,7 +31,7 @@
         #battle-field{display:flex;height:100vh;flex-direction:column;overflow:hidden}
         .battle-main{flex:1;display:flex;justify-content:space-between;padding:5px 10px;gap:5px;min-height:0}
         
-        .team-container{flex:1;display:flex;flex-direction:column;gap:5px;padding:8px;border-radius:20px;background:rgba(255,255,255,.03);border:3px solid transparent;transition:.3s;min-height:0; max-width:400px;}
+        .team-container{flex:1;display:flex;flex-direction:column;gap:5px;padding:15px;border-radius:25px;background:rgba(255,255,255,.03);border:3px solid transparent;transition:.3s;min-height:0; max-width:420px;}
         .team-container.active-team{border-color:#00f2ff;background:linear-gradient(180deg,rgba(0,242,255,.05) 0,rgba(0,100,255,.15) 100%);box-shadow:0 0 30px rgba(0,242,255,.6),inset 0 0 20px rgba(0,150,255,.4);animation:neonPulse 2s infinite alternate}
         @keyframes neonPulse{0%{box-shadow:0 0 15px rgba(0,242,255,.4),inset 0 0 10px rgba(0,150,255,.3);border-color:#00c3ff}100%{box-shadow:0 0 35px rgba(0,242,255,.8),inset 0 0 25px rgba(0,150,255,.6);border-color:#00f2ff}}
         
@@ -71,6 +71,11 @@
         @keyframes pulse{0%,100%{box-shadow:0 0 5px #0f0}50%{box-shadow:0 0 20px #0f0}100%{box-shadow:0 0 5px #0f0}}
 
         .card-header{display:flex;justify-content:space-between;align-items:center;font-weight:900;margin-bottom:4px}
+        .active-header { display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-left:20px; font-weight:900; margin-bottom:4px; }
+        .bench-header { display:flex; flex-direction:column; align-items:flex-start; margin-left:18px; font-weight:900; margin-bottom:4px; line-height:1.2; }
+        .bench-header .name-text { font-size:11px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+        .bench-header .hp-text { font-size:10px; font-weight:900; }
+        
         .card-img{width:100%;background:white;border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid #333;position:relative}
         .card-img img{width:85%;height:85%;object-fit:contain}
         .inspect-btn{position:absolute;top:-5px;left:-5px;background:rgba(0,0,0,.8);color:white;border-radius:50%;width:22px;height:22px;display:flex;justify-content:center;align-items:center;z-index:10;transition:transform .2s;border:1px solid #fff}
@@ -216,10 +221,10 @@
             <input type="file" id="csv-file" accept=".csv" style="color:white; font-size:14px; margin: 0 auto; display: block;" onchange="loadLocalCSV(event)">
         </div>
 
-        <button class="btn btn-gold" style="width:260px; margin:15px auto 0; padding:12px; font-size:20px; border-radius:30px;" onclick="initGame()">
+        <button class="btn btn-gold" style="width:260px; margin:15px auto 0; padding:12px; font-size:24px; border-radius:30px; font-weight:900; letter-spacing:2px;" onclick="initGame()">
             <div class="start-btn-content">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Pok%C3%A9_Ball_icon.svg" class="pokeball-icon">
-                START 進入戰鬥
+                START
                 <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Pok%C3%A9_Ball_icon.svg" class="pokeball-icon">
             </div>
         </button>
@@ -517,49 +522,73 @@
     };
 
     // --- 核心邏輯升級：超級轉址與萬能解析 ---
-    async function fetchCloudCSV() {
+    function fetchCloudCSV() {
         let url = document.getElementById('cloud-url').value.trim();
         if(!url) return;
         document.getElementById('cloud-status').innerText = "⏳ 解析連結中...";
         
         const idMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-        if (idMatch && idMatch[1]) { 
-            // 轉為標準 CSV 下載連結
-            url = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv`; 
+        if (!idMatch || !idMatch[1]) { 
+            document.getElementById('cloud-status').innerText = "❌ 無法解析網址，請確認包含 /d/ 試算表ID";
+            return;
         }
-
-        try {
-            let text = "";
+        
+        const sheetId = idMatch[1];
+        const callbackName = 'gvizCallback_' + Date.now();
+        
+        // 使用 JSONP 完美繞過 file:// 的 CORS 限制
+        window[callbackName] = function(data) {
             try {
-                // 1. 優先嘗試直接連線 (適用於有網域的環境，如 GitHub Pages)
-                const res = await fetch(url);
-                if (!res.ok) throw new Error("Direct fetch failed");
-                text = await res.text();
-            } catch (err1) {
-                try {
-                    // 2. 本機端備援方案 A：使用 corsproxy (高穩定性)
-                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
-                    if (!res.ok) throw new Error("Proxy 1 failed");
-                    text = await res.text();
-                } catch (err2) {
-                    // 3. 本機端備援方案 B：使用 allorigins 的 JSON API (100% 避開 CORS 阻擋)
-                    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-                    if (!res.ok) throw new Error("Proxy 2 failed");
-                    const data = await res.json();
-                    text = data.contents;
+                state.csvQuestions = [];
+                let rows = data.table.rows;
+                let startIdx = 0;
+                if(rows.length > 0 && rows[0].c[0] && rows[0].c[0].v && typeof rows[0].c[0].v === 'string') {
+                    const firstCell = rows[0].c[0].v.toLowerCase();
+                    if(firstCell.includes('題') || firstCell.includes('question') || firstCell.includes('答')) {
+                        startIdx = 1;
+                    }
                 }
+                
+                for(let i = startIdx; i < rows.length; i++) {
+                    let row = rows[i];
+                    if(!row.c || !row.c[0] || row.c[0].v === null || row.c[0].v === undefined) continue;
+                    
+                    let q = row.c[0].v.toString().trim();
+                    let cols = row.c.map(cell => (cell && cell.v !== null && cell.v !== undefined) ? cell.v.toString().trim() : "");
+                    
+                    while(cols.length > 0 && cols[cols.length - 1] === "") { cols.pop(); }
+                    
+                    if(cols.length >= 3) {
+                        let ans = parseInt(cols[cols.length - 1]);
+                        let opts = cols.slice(1, cols.length - 1).filter(o => o !== "");
+                        if(!isNaN(ans) && ans > 0 && ans <= opts.length) {
+                            state.csvQuestions.push({ q: q, opts: opts, ans: ans });
+                        }
+                    }
+                }
+                
+                if (state.csvQuestions.length > 0) {
+                    state.quizMode = 'csv';
+                    document.getElementById('cloud-status').innerText = `✅ 連線成功！讀取到 ${state.csvQuestions.length} 題。自動答題模式啟動。`;
+                } else {
+                    throw new Error("No valid data");
+                }
+            } catch (e) {
+                document.getElementById('cloud-status').innerText = "❌ 解析失敗。請確認試算表格式（題目, 選項1, 選項2, ..., 解答數字）。";
             }
+            delete window[callbackName];
+            document.getElementById(callbackName).remove();
+        };
 
-            if(!text || text.includes('<html') || text.includes('<!DOCTYPE')) throw new Error("PERMISSION_ERROR");
-
-            parseCSVData(text);
-            if (state.csvQuestions.length === 0) throw new Error("PARSE_ERROR");
-
-            document.getElementById('cloud-status').innerText = `✅ 連線成功！讀取到 ${state.csvQuestions.length} 題。自動答題模式啟動。`;
-        } catch (e) {
-            if(e.message === "PERMISSION_ERROR") document.getElementById('cloud-status').innerText = "❌ 權限錯誤。請確保試算表「共用」設為「知道連結的任何人皆可檢視」。";
-            else document.getElementById('cloud-status').innerText = "❌ 讀取失敗。請確認網址是否正確。";
-        }
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${callbackName}`;
+        script.onerror = function() {
+            document.getElementById('cloud-status').innerText = "❌ 連線失敗。請確認試算表「共用」已設為「知道連結的任何人皆可檢視」。";
+            delete window[callbackName];
+            script.remove();
+        };
+        document.body.appendChild(script);
     }
 
     function loadLocalCSV(e) {
@@ -1449,15 +1478,16 @@
                 if (p.buff.hasFocusSash) buffHtml += `<div class="item-tag" style="position: absolute; top: -5px; left: 25px; z-index: 5;">🎗️</div>`;
 
                 const deadClass = p.currHp <= 0 ? (isValidTarget ? 'dead revivable' : 'dead') : '';
+                const headerClass = isActive ? 'active-header' : 'bench-header';
 
                 let cardHtml = `
                     <div class="card type-${p.type} ${isActive ? 'card-active is-active-fighter' : 'card-bench'} ${deadClass} ${isValidTarget && p.currHp>0 ? 'valid-target' : ''}" 
                          id="${p.uid}" onclick="clickPokemon(${t}, ${pIdx})">
                         <div class="inspect-btn" onclick="event.stopPropagation(); inspectCard(${t}, ${pIdx})">🔍</div>
                         <div class="buff-container">${buffHtml}</div>
-                        <div class="card-header" style="margin-left:20px;">
-                            <span>${p.name}</span>
-                            <span style="color: ${hpPer < 30 ? '#ff0000' : '#000'}; font-size:10px; font-weight:900;">HP ${p.currHp}/${p.hp}</span>
+                        <div class="${headerClass}">
+                            <span class="name-text">${p.name}</span>
+                            <span class="hp-text" style="color: ${hpPer < 30 ? '#ff0000' : '#000'};">HP ${p.currHp}/${p.hp}</span>
                         </div>
                         <div class="status-container">${statusHtml}</div>
                         <div class="hp-bar"><div class="hp-fill" style="width:${Math.max(0, hpPer)}%; background:${hpPer < 30 ? '#ff4422' : '#4caf50'}"></div></div>
