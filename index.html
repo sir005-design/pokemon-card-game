@@ -312,6 +312,10 @@
         <div class="close-btn" onclick="document.getElementById('victory-modal').style.display='none'">✖</div>
         <h1 id="victory-team-text" style="font-size: 40px; text-shadow: 2px 2px #fff; margin-bottom: 15px;"></h1>
         <p style="font-size: 18px; font-weight: bold;">遊戲結束！</p>
+        
+        <!-- 新增：錯題統計區塊 -->
+        <div id="wrong-answers-summary" style="margin-top: 15px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; text-align: left; max-height: 250px; overflow-y: auto; display: none; border: 1px solid #555;"></div>
+        
         <button class="btn btn-blue" onclick="location.reload()" style="margin-top: 20px; font-size: 20px; padding: 12px 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); width:auto; margin:0 auto;">重新開始遊戲</button>
     </div>
 </div>
@@ -518,7 +522,7 @@
     let state = {
         quizMode: 'manual', questions: [], csvQuestions: [], qIdx: 0, currentTeam: 1, step: 'quiz', selectedHandItem: null, hasAttachedEnergyThisTurn: false,
         pendingAttack: null, pendingCatcherTarget: null, eotFlips: [], coinFlipReason: '', coinFlipsQueue: 0, coinFlipsResults: 0, transformingPokemon: null, isAttacking: false, redrawsLeft: 2, nextTurnTeam: null,
-        teams: { 1: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0 }, 2: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0 } }
+        teams: { 1: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0, wrongAnswers: [] }, 2: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0, wrongAnswers: [] } }
     };
 
     // --- 核心邏輯升級：超級轉址與萬能解析 ---
@@ -648,7 +652,7 @@
                     status: { poison: false, paralyze: false, burn: false, asleep: false, confused: false, immune_next: false, reduce_dmg_20: false, reduce_dmg_30: false, reduce_dmg_50: false, cant_attack: 0, enemy_dmg_minus_30: 0 },
                     buff: { dmg: 0, turns: 0, hasFocusSash: false }, isDead: false, hasContributedToLoss: false
                 }));
-                state.teams[t].hand = []; state.teams[t].lostLives = 0;
+                state.teams[t].hand = []; state.teams[t].lostLives = 0; state.teams[t].wrongAnswers = [];
             }
             const hp1 = state.teams[1].pokemon.reduce((sum, p) => sum + p.hp, 0);
             const hp2 = state.teams[2].pokemon.reduce((sum, p) => sum + p.hp, 0);
@@ -669,13 +673,13 @@
                 for(let t=1; t<=2; t++) {
                     const pool = [...POKEMON_DB].sort(() => Math.random() - 0.5);
                     state.teams[t].pokemon = pool.slice(0, 5).map((p, i) => ({
-                        ...p, currHp: p.hp, attachedEnergy: [], uid: `t${t}_${i}`,
-                        status: { poison: false, paralyze: false, burn: false, asleep: false, confused: false, immune_next: false, reduce_dmg_20: false, reduce_dmg_30: false, reduce_dmg_50: false, cant_attack: 0, enemy_dmg_minus_30: 0 },
-                        buff: { dmg: 0, turns: 0, hasFocusSash: false }, isDead: false, hasContributedToLoss: false
-                    }));
-                    state.teams[t].hand = []; state.teams[t].lostLives = 0;
-                }
-                const hp1 = state.teams[1].pokemon.reduce((sum, p) => sum + p.hp, 0);
+                    ...p, currHp: p.hp, attachedEnergy: [], uid: `t${t}_${i}`,
+                    status: { poison: false, paralyze: false, burn: false, asleep: false, confused: false, immune_next: false, reduce_dmg_20: false, reduce_dmg_30: false, reduce_dmg_50: false, cant_attack: 0, enemy_dmg_minus_30: 0 },
+                    buff: { dmg: 0, turns: 0, hasFocusSash: false }, isDead: false, hasContributedToLoss: false
+                }));
+                state.teams[t].hand = []; state.teams[t].lostLives = 0; state.teams[t].wrongAnswers = [];
+            }
+            const hp1 = state.teams[1].pokemon.reduce((sum, p) => sum + p.hp, 0);
                 const hp2 = state.teams[2].pokemon.reduce((sum, p) => sum + p.hp, 0);
                 attempts++;
                 if (Math.abs(hp1 - hp2) <= 80 || attempts >= 50) isBalanced = true; 
@@ -786,6 +790,7 @@
     }
 
     function checkAnswer(correct) {
+        const currentQIdx = state.qIdx;
         document.getElementById('quiz-modal').style.display = 'none'; state.qIdx++;
 
         if(correct) {
@@ -803,6 +808,18 @@
             }
             updateHint("請點擊手牌使用，或點擊招式攻擊 (攻擊後將自動結束回合)。\n🔍 點選左上角放大鏡可查看詳細狀態。");
         } else {
+            // 紀錄錯題邏輯
+            const myTeam = state.teams[state.currentTeam];
+            let qText = "";
+            if (state.quizMode === 'csv') {
+                const qObj = state.csvQuestions[currentQIdx % state.csvQuestions.length];
+                qText = `第${(currentQIdx % state.csvQuestions.length) + 1}題:${qObj.q}`;
+            } else {
+                const qStr = state.questions[currentQIdx % state.questions.length];
+                qText = `第${(currentQIdx % state.questions.length) + 1}題:${qStr.length > 15 ? qStr.substring(0, 15) + '...' : qStr}`;
+            }
+            myTeam.wrongAnswers.push(qText);
+
             addLog(`❌ 答錯了，無法獲得資源，回合結束。`); setTimeout(processEndOfTurn, 1000);
         }
         render();
@@ -1382,6 +1399,29 @@
         } else {
             document.getElementById('victory-team-text').textContent = `🏆 TEAM ${winningTeamNum} 獲勝！ 🏆`;
         }
+        
+        // 渲染錯題統計
+        const summaryDiv = document.getElementById('wrong-answers-summary');
+        let summaryHtml = "";
+        [1, 2].forEach(t => {
+            const wrongs = state.teams[t].wrongAnswers;
+            summaryHtml += `<h3 style="color:${t===1?'#00c3ff':'#ff6b6b'}; margin-top:${t===2?'15px':'0'}; margin-bottom:5px; font-size:18px;">Team ${t} 答錯的題目：</h3>`;
+            if(wrongs.length === 0) {
+                summaryHtml += `<div style="font-size:16px; color:#aaa; margin-left:10px;">(太厲害了，無答錯紀錄！)</div>`;
+            } else {
+                const wrongCounts = {};
+                wrongs.forEach(w => { wrongCounts[w] = (wrongCounts[w] || 0) + 1; });
+                
+                const formattedWrongs = Object.entries(wrongCounts).map(([w, count]) => {
+                    return count > 1 ? `<span style="color:#4caf50;">${w}(${count})</span>` : w;
+                });
+                
+                summaryHtml += `<div style="font-size:16px; margin-left:10px; color:#eee; line-height: 1.6; word-wrap: break-word;">${formattedWrongs.join(' <span style="color:#888; margin:0 4px;">/</span> ')}</div>`;
+            }
+        });
+        summaryDiv.innerHTML = summaryHtml;
+        summaryDiv.style.display = 'block';
+
         document.getElementById('victory-modal').style.display = 'flex';
         for(let i=0; i<60; i++) {
             const conf = document.createElement('div'); conf.className = 'confetti';
