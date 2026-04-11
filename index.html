@@ -30,51 +30,12 @@
         .start-btn-content { display: flex; align-items: center; justify-content: center; gap: 12px; }
         .pokeball-icon { width: 28px; height: 28px; }
 
-        /* ==============================================================
-           🚀 核心升級：絕對置中 + 固定視窗縮放法 (完美防跑版)
-           ============================================================== */
-        #battle-field {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #0a0a0c;
-            overflow: hidden;
-        }
-
-        #battle-scale-wrapper {
-            width: 1280px;  /* 絕對鎖死設計寬度 */
-            height: 720px;  /* ★ 修改：改為16:9比例，消除多餘垂直空白 */
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            /* Transform 會由 JS 自動加入 scale，保證永遠在正中央 */
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 讓三大區塊頂部對齊，並與上方保持完美距離 */
-        .battle-main { 
-            flex: 1; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: stretch; 
-            padding: 20px 10px; 
-            gap: 15px; 
-        }
+        /* 固定視窗縮放法 */
+        #battle-field { position: relative; width: 100vw; height: 100vh; background: #0a0a0c; overflow: hidden; }
+        #battle-scale-wrapper { width: 1280px; height: 720px; position: absolute; left: 50%; top: 50%; display: flex; flex-direction: column; overflow: hidden; }
+        .battle-main { flex: 1; display: flex; justify-content: space-between; align-items: stretch; padding: 20px 10px; gap: 15px; }
         
-        /* 隊伍框內：分配空間更精準 */
-        .team-container { 
-            width: 510px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            gap: 10px; 
-            padding: 20px 15px; 
-            border-radius: 25px; 
-            background: rgba(255,255,255,.03); 
-            border: 3px solid transparent; 
-            transition: .3s; 
-        }
+        .team-container { width: 510px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; padding: 20px 15px; border-radius: 25px; background: rgba(255,255,255,.03); border: 3px solid transparent; transition: .3s; }
         .team-container.active-team{border-color:#00f2ff;background:linear-gradient(180deg,rgba(0,242,255,.05) 0,rgba(0,100,255,.15) 100%);box-shadow:0 0 30px rgba(0,242,255,.6),inset 0 0 20px rgba(0,150,255,.4);animation:neonPulse 2s infinite alternate}
         @keyframes neonPulse{0%{box-shadow:0 0 15px rgba(0,242,255,.4),inset 0 0 10px rgba(0,150,255,.3);border-color:#00c3ff}100%{box-shadow:0 0 35px rgba(0,242,255,.8),inset 0 0 25px rgba(0,150,255,.6);border-color:#00f2ff}}
         
@@ -82,12 +43,10 @@
         .bench-grid { display:grid; grid-template-columns:repeat(2,120px); grid-template-rows:repeat(2,auto); gap:10px; justify-content:center; }
         .active-zone { flex:0 0 auto; display:flex; justify-content:center; align-items:center; padding:6px; border:2px dashed #444; border-radius:12px; margin: 0 5px; }
         
-        /* 手牌區區域 */
         .hand-wrapper { position: relative; width: 100%; margin-top: auto; }
         .hand-tooltip { position: absolute; bottom: 100%; margin-bottom: 5px; left: 50%; transform: translateX(-50%); width: 95%; background: rgba(20, 20, 20, 0.9); color: #ffcb05; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; border: 2px solid #ffcb05; z-index: 100; pointer-events: none; opacity: 0; transition: opacity 0.2s ease-in-out; box-shadow: 0 5px 15px rgba(0,0,0,0.7); line-height: 1.4; }
         .hand-tooltip.show { opacity: 1; }
         
-        /* ★ 修改：手牌放大，高度更高 */
         .hand-area { height: 110px; background: rgba(0,0,0,.6); border-radius: 12px; padding: 8px; display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; justify-content: center; overflow: hidden; }
         .hand-card { position:relative; flex: 1 1 0; max-width:65px; min-width:35px; height:95px; border-radius:8px; padding:4px; cursor:pointer; text-align:center; font-size:12px; font-weight:700; border:2px solid #fff; transition:.2s; box-shadow:0 4px 8px rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.1}
         .hand-card:hover{transform:translateY(-8px) scale(1.1);filter:brightness(1.2);z-index:50;}
@@ -95,13 +54,11 @@
         .hand-energy{background:#333}
         .hand-trainer{background:linear-gradient(135deg,#eee,#aaa);color:#222}
 
-        /* 中央控制區：與隊伍區齊頭對齊 */
         .center-panel { width: 210px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px 10px; gap: 10px; align-self: stretch; }
         #log{flex:1; width:100%; background:rgba(0,0,0,.7); border:1px solid #333; border-radius:8px; padding:10px; font-size:14px; color:#eee; overflow-y:auto; display:flex; flex-direction:column; gap:8px;}
         .log-entry{border-bottom:1px solid #222; padding-bottom:5px; animation:slideIn .3s ease-out; opacity:1 !important; line-height:1.4;}
         @keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
 
-        /* ★ 修改：卡牌整體放大，填滿空間 */
         .card{flex-shrink:0; background:#fff;border-radius:8px;color:#222;padding:6px;font-size:12px;cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative;border:3px solid transparent;box-shadow:0 6px 12px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
         .card-active{width:180px; transform: scale(1.05);}
         .card-active .card-img{height:90px}
@@ -166,8 +123,12 @@
         .hp-bar{height:6px;background:#333;border-radius:3px;margin:3px 0;overflow:hidden;border:1px solid #000}
         .hp-fill{height:100%;background:#4caf50;transition:width .3s}
 
-        /* 答題系統優化 (高度限制與智慧縮放) */
-        .modal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+        /* 系統提示彈窗 (保持 fixed 全局顯示) */
+        .modal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:20000}
+        
+        /* ★ 新增：遊戲內部模態框 (絕對定位在 scale wrapper 內) ★ */
+        .game-modal{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10000}
+
         .modal-box{background:#1a1a1a;padding:30px;border-radius:20px;max-width:1000px;width:95%;text-align:center;border:2px solid #ffcb05;position:relative}
         .btn{padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:bold;border:none;font-size:14px;transition:.3s;width:100%;display:block;margin-bottom:8px;}
         .btn:not(:disabled):hover{filter:brightness(1.3);transform:translateY(-2px)}
@@ -176,39 +137,40 @@
         #setup-ui { display: flex; flex-direction: column; width: 100%; gap: 5px; margin-bottom: 10px; }
 
         .kahoot-btn { 
-            padding: 10px 25px; 
-            border-radius: 8px; 
+            padding: 15px 30px; 
+            border-radius: 12px; 
             border: none; 
             color: white; 
             font-weight: bold; 
             cursor: pointer; 
             transition: 0.2s; 
-            box-shadow: 0 5px 0 rgba(0,0,0,0.3); 
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3); 
             display: flex; 
             align-items: center; 
             justify-content: flex-start; 
-            min-height: 80px; 
-            max-height: 120px; /* ★ 高度限制，永不變形跑版 ★ */
+            min-height: 120px; 
+            max-height: 180px;
             flex: 1 1 calc(50% - 20px); 
             overflow: hidden; 
         }
-        .kahoot-btn:hover { filter: brightness(1.15); transform: translateY(-2px); box-shadow: 0 7px 0 rgba(0,0,0,0.3); }
-        .kahoot-btn:active { transform: translateY(5px); box-shadow: 0 0 0 rgba(0,0,0,0.3); }
+        .kahoot-btn:hover { filter: brightness(1.15); transform: translateY(-3px); box-shadow: 0 8px 0 rgba(0,0,0,0.3); }
+        .kahoot-btn:active { transform: translateY(6px); box-shadow: 0 0 0 rgba(0,0,0,0.3); }
         .kb-red { background-color: #e21b3c; }
         .kb-blue { background-color: #1368ce; }
         .kb-yellow { background-color: #d89e00; }
         .kb-green { background-color: #26890c; }
 
-        .question-formatted{text-align:left;display:inline-block;max-width:100%;font-size:24px;line-height:1.6;font-family:Arial,sans-serif}
+        .question-formatted{text-align:left;display:inline-block;max-width:100%;font-size:32px;line-height:1.6;font-family:Arial,sans-serif}
         .question-body{text-align:left;margin-bottom:15px; font-weight:bold; color:#ffcb05;}
         .question-q{color:white}
         .question-a{margin-top:10px;color:#ffcb05;font-weight:bold}
         .question-option{padding-left:2em;text-indent:-2em;margin-bottom:6px;text-align:left}
         
-        #inspect-content .card{width:280px;font-size:14px;padding:12px;cursor:default;box-shadow:0 0 30px rgba(255,255,255,.5)}
-        #inspect-content .card-img{height:140px}
-        #inspect-content .energy-icon{width:16px;height:16px}
-        #inspect-content .attack-row{font-size:14px;padding:8px;margin-top:8px}
+        /* 放大檢視與平板攻擊按鈕 UI */
+        #inspect-content .card{width:320px;font-size:16px;padding:15px;cursor:default;box-shadow:0 0 40px rgba(255,255,255,.5)}
+        #inspect-content .card-img{height:160px}
+        #inspect-content .energy-icon{width:20px;height:20px}
+        #inspect-content .attack-row{font-size:16px;padding:12px;margin-top:10px;}
         
         .hidden{display:none!important}
         .damage-pop{position:fixed;color:#f00;font-size:50px;font-weight:900;text-shadow:0 0 10px #fff;pointer-events:none;z-index:9000;animation:popUp 1s forwards}
@@ -219,29 +181,30 @@
         .close-btn{position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;color:#000;font-weight:bold;transition:.2s}
         .close-btn:hover{transform:scale(1.2);color:#fff}
         
-        .coin-container{perspective:1000px;margin:20px auto;width:100px;height:100px;cursor:pointer;transition:transform .2s}
+        .coin-container{perspective:1000px;margin:20px auto;width:150px;height:150px;cursor:pointer;transition:transform .2s}
         .coin-container:hover{transform:scale(1.1)}
         .coin-container.flipping{pointer-events:none}
         .coin{width:100%;height:100%;position:relative;transform-style:preserve-3d}
-        .coin-face{position:absolute;width:100%;height:100%;border-radius:50%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;box-shadow:0 0 15px rgba(0,0,0,.5)}
-        .coin-heads{background:linear-gradient(to bottom,#f44336 50%,#fff 50%);border:4px solid #333}
-        .coin-heads::after{content:'';position:absolute;width:100%;height:6px;background:#333;top:50%;transform:translateY(-50%)}
-        .coin-heads::before{content:'';position:absolute;width:24px;height:24px;background:#fff;border:4px solid #333;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
-        .coin-tails{background:#333;color:#fff;transform:rotateY(180deg);border:4px solid #888}
+        .coin-face{position:absolute;width:100%;height:100%;border-radius:50%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:bold;box-shadow:0 0 20px rgba(0,0,0,.6); border:6px solid #333;}
+        .coin-heads{background:linear-gradient(to bottom,#f44336 50%,#fff 50%);}
+        .coin-heads::after{content:'';position:absolute;width:100%;height:8px;background:#333;top:50%;transform:translateY(-50%)}
+        .coin-heads::before{content:'';position:absolute;width:36px;height:36px;background:#fff;border:6px solid #333;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
+        .coin-tails{background:#333;color:#fff;transform:rotateY(180deg);border-color:#888;}
     </style>
 </head>
 <body>
 
 <canvas id="fx-canvas"></canvas>
 
-<div id="sys-alert" class="modal" style="z-index: 9999;">
+<!-- 系統彈窗：保持在畫面最頂層，不受比例縮放限制 -->
+<div id="sys-alert" class="modal" style="z-index: 99999;">
     <div class="modal-box" style="border-color: #ff4444; padding: 40px; max-width: 500px;">
         <div id="sys-alert-msg" style="font-size: 24px; margin-bottom: 30px; line-height:1.5;"></div>
         <button class="btn" style="background:#ffcb05; color:black; font-size:18px; width:150px; margin:0 auto;" onclick="document.getElementById('sys-alert').style.display='none'">確定</button>
     </div>
 </div>
 
-<div id="sys-confirm" class="modal" style="z-index: 9999;">
+<div id="sys-confirm" class="modal" style="z-index: 99999;">
     <div class="modal-box" style="border-color: #ffcb05; padding: 40px; max-width: 500px;">
         <div id="sys-confirm-msg" style="font-size: 24px; margin-bottom: 30px; line-height:1.5;"></div>
         <div style="display:flex; gap:20px; justify-content:center;">
@@ -333,50 +296,51 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- 答題與判定視窗 -->
-<div id="quiz-modal" class="modal">
-    <div class="modal-box" style="max-width: 1000px;">
-        <h2 id="modal-team-name" style="margin-bottom: 20px; font-size:32px; font-weight:900; text-shadow:0 0 10px rgba(255,255,255,0.5); color:#ffcb05;"></h2>
-        <div id="quiz-text" style="margin: 25px 0;"></div>
-        <div id="quiz-options-container" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;"></div>
-    </div>
-</div>
+        <!-- 遊戲內部 Modal 移入 Scale Wrapper 內，保證跟著縮放固定比例 -->
+        <div id="quiz-modal" class="game-modal">
+            <div class="modal-box" style="max-width: 1000px; padding: 40px;">
+                <h2 id="modal-team-name" style="margin-bottom: 25px; font-size:40px; font-weight:900; text-shadow:0 0 10px rgba(255,255,255,0.5); color:#ffcb05;"></h2>
+                <div id="quiz-text" style="margin: 30px 0;"></div>
+                <div id="quiz-options-container" style="display: flex; gap: 25px; justify-content: center; flex-wrap: wrap;"></div>
+            </div>
+        </div>
 
-<div id="coin-modal" class="modal">
-    <div class="modal-box">
-        <h2 style="color:#f4d23c;">🪙 判定中...</h2>
-        <p id="coin-desc" style="font-size: 18px; margin: 15px 0; line-height: 1.5;"></p>
-        <div id="digital-coin-area" style="margin: 30px 0; display: flex; flex-direction: column; align-items: center;">
-            <div class="coin-container" id="auto-coin" onclick="autoFlipCoin()">
-                <div class="coin" id="coin-inner">
-                    <div class="coin-face coin-heads"></div>
-                    <div class="coin-face coin-tails">反</div>
+        <div id="coin-modal" class="game-modal">
+            <div class="modal-box" style="max-width: 650px; padding: 50px;">
+                <h2 style="color:#f4d23c; font-size:36px;">🪙 判定中...</h2>
+                <p id="coin-desc" style="font-size: 24px; margin: 20px 0; line-height: 1.5;"></p>
+                <div id="digital-coin-area" style="margin: 30px 0; display: flex; flex-direction: column; align-items: center;">
+                    <div class="coin-container" id="auto-coin" onclick="autoFlipCoin()">
+                        <div class="coin" id="coin-inner">
+                            <div class="coin-face coin-heads"></div>
+                            <div class="coin-face coin-tails">反</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 16px; color: #aaa; margin-top:30px;">(點擊精靈球由電腦代擲)</div>
+                </div>
+                <div style="display: flex; gap: 40px; justify-content: center; margin-top: 30px;">
+                    <button class="btn" style="background:var(--team1-color); color:white; width:150px; font-size:24px; padding: 15px;" onclick="resolveCoinFlip(true)">正面</button>
+                    <button class="btn" style="background:var(--team2-color); color:white; width:150px; font-size:24px; padding: 15px;" onclick="resolveCoinFlip(false)">反面</button>
                 </div>
             </div>
-            <div style="font-size: 13px; color: #aaa; margin-top:20px;">(點擊精靈球由電腦代擲)</div>
         </div>
-        <div style="display: flex; gap: 30px; justify-content: center; margin-top: 20px;">
-            <button class="btn" style="background:var(--team1-color); color:white; width:120px; font-size:18px;" onclick="resolveCoinFlip(true)">正面</button>
-            <button class="btn" style="background:var(--team2-color); color:white; width:120px; font-size:18px;" onclick="resolveCoinFlip(false)">反面</button>
+
+        <div id="inspect-modal" class="game-modal" onclick="closeInspect()">
+            <div id="inspect-content" onclick="event.stopPropagation()"></div>
+            <div style="margin-top: 30px; color: #ccc; font-size:20px; font-weight:bold;">點擊背景關閉</div>
         </div>
-    </div>
-</div>
 
-<div id="inspect-modal" class="modal" onclick="closeInspect()">
-    <div id="inspect-content" onclick="event.stopPropagation()"></div>
-    <div style="margin-top: 20px; color: #ccc; font-size:16px;">點擊背景關閉</div>
-</div>
+        <div id="victory-modal" class="game-modal" style="z-index: 10002;">
+            <div class="modal-box">
+                <div class="close-btn" onclick="document.getElementById('victory-modal').style.display='none'">✖</div>
+                <h1 id="victory-team-text" style="font-size: 50px; text-shadow: 2px 2px #fff; margin-bottom: 20px;"></h1>
+                <p style="font-size: 24px; font-weight: bold; color:#333;">遊戲結束！</p>
+                <div id="wrong-answers-summary" style="margin-top: 20px; background: rgba(0,0,0,0.7); padding: 25px; border-radius: 12px; text-align: left; max-height: 350px; overflow-y: auto; display: none; border: 2px solid #555;"></div>
+                <button class="btn" style="background:var(--team1-color); color:white; margin-top: 30px; font-size: 24px; padding: 15px 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" onclick="location.reload()">重新開始遊戲</button>
+            </div>
+        </div>
 
-<div id="victory-modal" class="modal" style="z-index: 10002;">
-    <div class="modal-box">
-        <div class="close-btn" onclick="document.getElementById('victory-modal').style.display='none'">✖</div>
-        <h1 id="victory-team-text" style="font-size: 45px; text-shadow: 2px 2px #fff; margin-bottom: 15px;"></h1>
-        <p style="font-size: 20px; font-weight: bold; color:#333;">遊戲結束！</p>
-        <div id="wrong-answers-summary" style="margin-top: 20px; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 12px; text-align: left; max-height: 300px; overflow-y: auto; display: none; border: 2px solid #555;"></div>
-        <button class="btn" style="background:var(--team1-color); color:white; margin-top: 25px; font-size: 22px; padding: 15px 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" onclick="location.reload()">重新開始遊戲</button>
     </div>
 </div>
 
@@ -387,20 +351,17 @@
         if (!wrapper) return;
         const winW = window.innerWidth;
         const winH = window.innerHeight;
-        // 計算縮放比例
         const scale = Math.min(winW / 1280, winH / 720);
-        // 使用 translate(-50%, -50%) 配合 scale 確保完美絕對置中
         wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
     }
     window.addEventListener('resize', updateBattleScale);
 
-    // --- 系統 UI ---
     function showAlert(msg) { document.getElementById('sys-alert-msg').innerText = msg; document.getElementById('sys-alert').style.display = 'flex'; }
     function showConfirm(msg, onYes) { document.getElementById('sys-confirm-msg').innerText = msg; document.getElementById('sys-confirm-yes').onclick = () => { document.getElementById('sys-confirm').style.display = 'none'; onYes(); }; document.getElementById('sys-confirm').style.display = 'flex'; }
     function showHandTooltip(team, text) { const el = document.getElementById('hand-tooltip-' + team); if (el && text) { el.innerText = text; el.classList.add('show'); } }
     function hideHandTooltip(team) { const el = document.getElementById('hand-tooltip-' + team); if (el) el.classList.remove('show'); }
 
-    // --- ★ 視覺特效部分 ★ ---
+    // --- ★ 視覺特效部分 (全面強化) ★ ---
     const fxCanvas = document.getElementById('fx-canvas'); const fxCtx = fxCanvas.getContext('2d');
     let fxParticles = [], fxSparks = [], fxProjectiles = [], fxSpecial = []; let screenShake = 0, hitStop = 0, fxFrame = 0;
     function resizeFxCanvas() { fxCanvas.width = window.innerWidth; fxCanvas.height = window.innerHeight; }
@@ -409,22 +370,22 @@
     
     function triggerModernHit(x, y, type, dmg) {
         const color = getTypeColor(type);
-        fxSparks.push({ x, y, color, l: 1.0, scale: 0.1, maxScale: 0.5 + dmg/250 });
-        for(let i=0; i<20; i++) fxParticles.push({ x, y, c: color, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, l: 1.0, d: 0.03, s: 4 + Math.random()*4 });
-        screenShake = Math.min(25, 10 + dmg/10); hitStop = 6;
+        fxSparks.push({ x, y, color, l: 1.0, scale: 0.2, maxScale: 0.8 + dmg/150 });
+        for(let i=0; i<30; i++) fxParticles.push({ x, y, c: color, vx: (Math.random()-0.5)*25, vy: (Math.random()-0.5)*25, l: 1.0, d: 0.02, s: 6 + Math.random()*6 });
+        screenShake = Math.min(40, 15 + dmg/8); hitStop = 8;
     }
 
     function triggerUltimateHit(tx, ty, type, dmg, sx, sy) {
         const color = getTypeColor(type);
         if (type === 'electric') {
             fxSpecial.push({ type: 'thunder', x: tx, y: ty, l: 1.0 });
-            setTimeout(() => { triggerModernHit(tx, ty, type, dmg * 1.5); screenShake = 40; hitStop = 8; }, 150);
+            setTimeout(() => { triggerModernHit(tx, ty, type, dmg * 1.5); screenShake = 50; hitStop = 10; }, 150);
         } else {
             let count = 0;
             let burst = setInterval(() => {
-                fxProjectiles.push({ x: sx + (Math.random()-0.5)*80, y: sy + (Math.random()-0.5)*80, tx: tx + (Math.random()-0.5)*60, ty: ty + (Math.random()-0.5)*60, c: color, type: type, speed: 0.15, progress: 0 });
-                count++; if (count >= 7) { clearInterval(burst); setTimeout(() => { triggerModernHit(tx, ty, type, dmg); screenShake = 35; hitStop = 8; }, 150); }
-            }, 80);
+                fxProjectiles.push({ x: sx + (Math.random()-0.5)*100, y: sy + (Math.random()-0.5)*100, tx: tx + (Math.random()-0.5)*60, ty: ty + (Math.random()-0.5)*60, c: color, type: type, speed: 0.15, progress: 0 });
+                count++; if (count >= 10) { clearInterval(burst); setTimeout(() => { triggerModernHit(tx, ty, type, dmg); screenShake = 45; hitStop = 10; }, 150); }
+            }, 60);
         }
     }
 
@@ -434,16 +395,16 @@
         fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height); fxCtx.globalCompositeOperation = 'lighter';
         fxSpecial = fxSpecial.filter(s => s.l > 0); fxSpecial.forEach(s => {
             if (s.type === 'thunder') {
-                fxCtx.save(); fxCtx.strokeStyle = '#FFF'; fxCtx.shadowBlur = 40; fxCtx.shadowColor = '#FFDD00'; fxCtx.lineWidth = 20 * s.l;
-                fxCtx.beginPath(); let x = s.x + (Math.random()-0.5)*150, y = 0; fxCtx.moveTo(x, y);
-                while(y < s.y) { x += (Math.random()-0.5)*60; y += 40; fxCtx.lineTo(x, y); } fxCtx.stroke();
-                fxCtx.restore(); s.l -= 0.15;
+                fxCtx.save(); fxCtx.strokeStyle = '#FFF'; fxCtx.shadowBlur = 50; fxCtx.shadowColor = '#FFDD00'; fxCtx.lineWidth = 30 * s.l;
+                fxCtx.beginPath(); let x = s.x + (Math.random()-0.5)*200, y = 0; fxCtx.moveTo(x, y);
+                while(y < s.y) { x += (Math.random()-0.5)*80; y += 50; fxCtx.lineTo(x, y); } fxCtx.stroke();
+                fxCtx.restore(); s.l -= 0.12;
             }
         });
         fxProjectiles = fxProjectiles.filter(p => p.progress < 1); fxProjectiles.forEach(p => {
             p.progress += p.speed; if (p.progress > 1) p.progress = 1;
             const curX = p.x + (p.tx - p.x) * p.progress; const curY = p.y + (p.ty - p.y) * p.progress;
-            fxCtx.save(); fxCtx.fillStyle = p.c; fxCtx.translate(curX, curY); fxCtx.beginPath(); fxCtx.arc(0, 0, 10, 0, Math.PI*2); fxCtx.fill(); fxCtx.restore();
+            fxCtx.save(); fxCtx.fillStyle = p.c; fxCtx.translate(curX, curY); fxCtx.beginPath(); fxCtx.arc(0, 0, 15, 0, Math.PI*2); fxCtx.fill(); fxCtx.restore();
         });
         fxSparks = fxSparks.filter(s => s.l > 0); fxSparks.forEach(s => { drawSparkV2(s); s.scale += (s.maxScale - s.scale) * 0.2; s.l -= 0.04; });
         fxParticles = fxParticles.filter(p => p.l > 0); fxParticles.forEach(p => {
@@ -456,8 +417,8 @@
     
     function drawSparkV2(s) {
         fxCtx.save(); fxCtx.translate(s.x, s.y); fxCtx.globalAlpha = s.l; fxCtx.globalCompositeOperation = 'lighter';
-        const coreGrad = fxCtx.createRadialGradient(0, 0, 0, 0, 0, 50 * s.scale); coreGrad.addColorStop(0, '#fff'); coreGrad.addColorStop(0.4, s.color); coreGrad.addColorStop(1, 'transparent');
-        fxCtx.fillStyle = coreGrad; fxCtx.beginPath(); fxCtx.arc(0, 0, 60 * s.scale, 0, Math.PI*2); fxCtx.fill(); fxCtx.restore();
+        const coreGrad = fxCtx.createRadialGradient(0, 0, 0, 0, 0, 80 * s.scale); coreGrad.addColorStop(0, '#fff'); coreGrad.addColorStop(0.4, s.color); coreGrad.addColorStop(1, 'transparent');
+        fxCtx.fillStyle = coreGrad; fxCtx.beginPath(); fxCtx.arc(0, 0, 100 * s.scale, 0, Math.PI*2); fxCtx.fill(); fxCtx.restore();
     }
 
     function showDamage(uid, dmg, type = 'normal', isUltimate = false, attackerUid = null) {
@@ -470,22 +431,19 @@
             const attackerEl = document.getElementById(attackerUid);
             if (attackerEl) { const aRect = attackerEl.getBoundingClientRect(); sx = aRect.left + aRect.width / 2; sy = aRect.top + aRect.height / 2; }
         }
-        
         const popDelay = isUltimate ? (type === 'electric' ? 200 : 700) : 0;
-        
         if (dmg > 0) {
             if (isUltimate) triggerUltimateHit(cx, cy, type, dmg, sx, sy);
             else triggerModernHit(cx, cy, type, dmg);
         }
-        
         setTimeout(() => {
             const pop = document.createElement('div'); pop.className = 'damage-pop'; pop.textContent = dmg > 0 ? `-${dmg}` : "MISS";
-            pop.style.left = `${cx - 25}px`; pop.style.top = `${cy - 25}px`;
+            pop.style.left = `${cx - 35}px`; pop.style.top = `${cy - 35}px`;
             document.body.appendChild(pop); setTimeout(() => pop.remove(), 1000);
         }, popDelay);
     }
 
-    // --- 完整寶可夢數據庫 (64 隻) ---
+    // --- ★ 寶可夢數據庫 (0攻招式已修正為10) ★ ---
     const POKEMON_DB = [
         { id: 1, name: '妙蛙種子', type: 'grass', hp: 70, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'藤鞭', d:20, cost:['grass']}, {n:'飛葉快刀', d:40, cost:['grass','grass']}] },
         { id: 2, name: '妙蛙草', type: 'grass', hp: 100, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'寄生種子', d:30, cost:['grass','any'], special:'heal_self_20', desc:'恢復自己20HP'}, {n:'劇毒之鞭', d:50, cost:['grass','grass','any'], special:'poison_flip', desc:'硬幣正面使對手中毒'}] },
@@ -495,7 +453,7 @@
         { id: 6, name: '噴火龍', type: 'fire', hp: 150, weakness: 'water', resistance: {type:'grass', val:20}, attacks: [{n:'空氣斬', d:60, cost:['fire','fire','any']}, { id:'ultimate', n:'大字爆炎', d:140, cost:['fire','fire','fire','any'], special:'discard_2_fire', desc:'喪失2火能量'}] },
         { id: 7, name: '傑尼龜', type: 'water', hp: 70, weakness: 'grass', resistance: {type:'fire', val:20}, attacks: [{n:'縮入殼中', d:10, cost:['water'], special:'immune_next_flip', desc:'正面下回免傷'}, {n:'水槍', d:30, cost:['water','any']}] },
         { id: 8, name: '卡咪龜', type: 'water', hp: 90, weakness: 'grass', resistance: {type:'fire', val:20}, attacks: [{n:'水之波動', d:50, cost:['water','water']}, {n:'火箭頭槌', d:70, cost:['water','water','any'], special:'reduce_dmg_taken_flip', desc:'正面受傷-30'}] },
-        { id: 9, name: '水箭龜', type: 'water', hp: 150, weakness: 'grass', resistance: {type:'fire', val:20}, attacks: [{n:'堅硬甲殼', d:0, cost:['water','water','any'], special:'reduce_dmg_taken_50', desc:'下回受傷-50'}, {n:'加農水炮', d:130, cost:['water','water','water','any'], special:'dmg_flip', desc:'需擲幣正面成功'}] },
+        { id: 9, name: '水箭龜', type: 'water', hp: 150, weakness: 'grass', resistance: {type:'fire', val:20}, attacks: [{n:'堅硬甲殼', d:10, cost:['water','water','any'], special:'reduce_dmg_taken_50', desc:'下回受傷-50'}, {n:'加農水炮', d:130, cost:['water','water','water','any'], special:'dmg_flip', desc:'需擲幣正面成功'}] },
         { id: 25, name: '皮卡丘', type: 'electric', hp: 100, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'高速移動', d:30, cost:['electric'], special:'immune_next_flip', desc:'正面免傷'}, {n:'十萬伏特', d:100, cost:['electric','electric','electric']}] },
         { id: 26, name: '雷丘', type: 'electric', hp: 110, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'電球', d:50, cost:['electric','electric'], special:'paralyze_flip', desc:'硬幣正面麻痺'}, {n:'伏特攻擊', d:120, cost:['electric','electric','electric','any'], special:'self_dmg_20', desc:'自己受到20傷害'}] },
         { id: 133, name: '伊布', type: 'normal', hp: 60, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'咬', d:20, cost:['any']}, {n:'突擊', d:40, cost:['any','any']}] },
@@ -507,13 +465,13 @@
         { id: 470, name: '葉伊布', type: 'grass', hp: 120, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'葉子防守', d:40, cost:['grass','grass'], special:'reduce_dmg_taken_30', desc:'下回合受傷-30'}, {n:'葉刃', d:90, cost:['grass','grass','any']}] },
         { id: 471, name: '冰伊布', type: 'water', hp: 130, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'雪隱', d:30, cost:['water','water'], special:'immune_next_flip', desc:'硬幣正面下回合免傷'}, {n:'冰凍光束', d:100, cost:['water','water','water'], special:'asleep_flip', desc:'硬幣正面對手睡眠'}] },
         { id: 700, name: '仙子伊布', type: 'normal', hp: 130, weakness: 'none', resistance: {type:'normal', val:20}, attacks: [{n:'魅惑之聲', d:40, cost:['any','any'], special:'confuse', desc:'對手必定混亂'}, {n:'月亮之力', d:60, cost:['electric','any','any'], special:'enemy_dmg_minus_30', desc:'下回合對手攻擊力-30'}] },
-        { id: 151, name: '夢幻', type: 'normal', hp: 130, weakness: 'none', resistance: {type:'any', val:20}, attacks: [{n:'超感知', d:40, cost:['any','any'], special:'draw_1', desc:'抽 1 張卡'}, {n:'變身', d:0, cost:['fire','electric','any','any'], special:'transform_choose', desc:'複製對手，回後備恢復60HP'}] },
+        { id: 151, name: '夢幻', type: 'normal', hp: 130, weakness: 'none', resistance: {type:'any', val:20}, attacks: [{n:'超感知', d:40, cost:['any','any'], special:'draw_1', desc:'抽 1 張卡'}, {n:'變身', d:10, cost:['fire','electric','any','any'], special:'transform_choose', desc:'複製對手，回後備恢復60HP'}] },
         { id: 143, name: '卡比獸', type: 'normal', hp: 150, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'扣殺抽出', d:30, cost:['any','any'], special:'draw_1', desc:'抽1張卡'}, {n:'泰山壓頂', d:100, cost:['grass','any','any','any'], special:'asleep_self', desc:'使用完自己陷入睡眠'}] },
         { id: 94, name: '耿鬼', type: 'normal', hp: 110, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'毒瓦斯', d:20, cost:['any','any'], special:'poison', desc:'必定中毒'}, {n:'漆黑', d:60, cost:['grass','any','any'], special:'confuse_flip', desc:'硬幣正面對手混亂'}] },
         { id: 37, name: '六尾', type: 'fire', hp: 60, weakness: 'water', resistance: {type:'grass', val:20}, attacks: [{n:'鬼火', d:20, cost:['fire'], special:'burn_flip', desc:'硬幣正面對手灼傷'}, {n:'奇異之光', d:40, cost:['fire','fire','any'], special:'confuse', desc:'對手必定混亂'}] },
         { id: 38, name: '九尾', type: 'fire', hp: 140, weakness: 'water', resistance: {type:'grass', val:20}, attacks: [{n:'熱風', d:30, cost:['fire','any'], special:'burn', desc:'對手必定灼傷'}, {n:'灼熱氣息', d:130, cost:['fire','fire','fire','any'], special:'cant_act_next', desc:'該寶可夢下回合無法使用招式'}] },
         { id: 43, name: '走路草', type: 'grass', hp: 60, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'催眠粉', d:10, cost:['grass'], special:'asleep', desc:'對手必定睡眠'}, {n:'麻痺粉', d:40, cost:['grass','any'], special:'paralyze_flip', desc:'硬幣正面麻痺'}] },
-        { id: 44, name: '臭臭花', type: 'grass', hp: 80, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'溶解液', d:20, cost:['grass','any'], special:'poison', desc:'必定中毒'}, {n:'誘導香氣', d:0, cost:['grass','any','any'], special:'force_swap_choose', desc:'選擇對手後備與戰鬥互換'}] },
+        { id: 44, name: '臭臭花', type: 'grass', hp: 80, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'溶解液', d:20, cost:['grass','any'], special:'poison', desc:'必定中毒'}, {n:'誘導香氣', d:10, cost:['grass','any','any'], special:'force_swap_choose', desc:'選擇對手後備與戰鬥互換'}] },
         { id: 54, name: '可達鴨', type: 'water', hp: 60, weakness: 'grass', resistance: {type:'fire', val:20}, attacks: [{n:'水槍', d:20, cost:['water']}, {n:'念力', d:20, cost:['water','any'], special:'confuse', desc:'對手必定混亂'}] },
         { id: 55, name: '哥達鴨', type: 'water', hp: 100, weakness: 'grass', resistance: {type:'fire', val:20}, attacks: [{n:'衝浪', d:60, cost:['water','any']}, {n:'水炮', d:70, cost:['water','water','any'], special:'plus_dmg_per_water', desc:'每多1水+10傷害'}] },
         { id: 52, name: '喵喵', type: 'normal', hp: 60, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'聚寶功', d:20, cost:['any'], special:'draw_1', desc:'抽1張卡'}, {n:'亂抓', d:20, cost:['any','any'], special:'flip_3_x20', desc:'擲3次硬幣，正面次數x20'}] },
@@ -529,7 +487,7 @@
         { id: 812, name: '轟擂金剛猩', type: 'grass', hp: 150, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'鼓打', d:50, cost:['grass','any']}, {n:'木槌', d:130, cost:['grass','grass','grass','any'], special:'self_dmg_20', desc:'自己受到20傷害'}] },
         { id: 77, name: '小火馬', type: 'fire', hp: 60, weakness: 'water', resistance: {type:'grass', val:20}, attacks: [{n:'踩踏', d:20, cost:['any']}, {n:'蓄能焰襲', d:30, cost:['fire','any'], special:'burn_flip', desc:'正面對手灼傷'}] },
         { id: 78, name: '烈焰馬', type: 'fire', hp: 100, weakness: 'water', resistance: {type:'grass', val:20}, attacks: [{n:'烈焰濺射', d:50, cost:['fire','fire']}, {n:'大字爆炎', d:90, cost:['fire','fire','any'], special:'discard_1_fire', desc:'喪失1火能量'}] },
-        { id: 869, name: '霜奶仙', type: 'normal', hp: 90, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'裝飾', d:0, cost:['any'], special:'draw_1', desc:'抽 1 張卡'}, {n:'魔法閃耀', d:50, cost:['any','any'], special:'confuse_flip', desc:'正面對手混亂'}] },
+        { id: 869, name: '霜奶仙', type: 'normal', hp: 90, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'裝飾', d:10, cost:['any'], special:'draw_1', desc:'抽 1 張卡'}, {n:'魔法閃耀', d:50, cost:['any','any'], special:'confuse_flip', desc:'正面對手混亂'}] },
         { id: 131, name: '拉普拉斯', type: 'water', hp: 120, weakness: 'electric', resistance: {type:'none', val:0}, attacks: [{n:'冰礫', d:20, cost:['water']}, {n:'冰凍光束', d:80, cost:['water','water','any'], special:'asleep_flip', desc:'正面對手睡眠'}] },
         { id: 810, name: '敲音猴', type: 'grass', hp: 60, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'抓', d:20, cost:['any']}, {n:'木枝突刺', d:30, cost:['grass','any']}] },
         { id: 755, name: '睡睡菇', type: 'grass', hp: 60, weakness: 'fire', resistance: {type:'water', val:20}, attacks: [{n:'閃爍', d:10, cost:['grass'], special:'asleep_flip', desc:'正面對手睡眠'}, {n:'吸取', d:20, cost:['grass','any'], special:'heal_self_20', desc:'恢復自己20HP'}] },
@@ -537,7 +495,7 @@
         { id: 883, name: '腮魚海獸', type: 'water', hp: 130, weakness: 'electric', resistance: {type:'none', val:0}, attacks: [{n:'冰凍牙', d:40, cost:['water','water'], special:'paralyze_flip', desc:'正面對手麻痺'}, {n:'凍寒咬', d:90, cost:['water','water','any']}] },
         { id: 12, name: '巴大蝶', type: 'grass', hp: 110, weakness: 'fire', resistance: {type:'none', val:0}, attacks: [{n:'毒粉', d:20, cost:['grass'], special:'poison', desc:'必定中毒'}, {n:'起風', d:50, cost:['any','any']}] },
         { id: 572, name: '奇諾栗鼠', type: 'normal', hp: 90, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'掃尾拍打', d:20, cost:['any','any'], special:'flip_2_x20', desc:'擲2次幣正面次數x20'}, {n:'幫助', d:40, cost:['grass','any','any'], special:'draw_2', desc:'抽 2 張卡'}] },
-        { id: 623, name: '泥偶巨人', type: 'normal', hp: 140, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'鐵壁', d:0, cost:['any','any'], special:'reduce_dmg_taken_50', desc:'下回合受傷-50'}, {n:'暗影拳', d:60, cost:['water','any','any'], special:'ignore_resistance', desc:'無視敵方減傷與抗性'}] },
+        { id: 623, name: '泥偶巨人', type: 'normal', hp: 140, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'鐵壁', d:10, cost:['any','any'], special:'reduce_dmg_taken_50', desc:'下回合受傷-50'}, {n:'暗影拳', d:60, cost:['water','any','any'], special:'ignore_resistance', desc:'無視敵方減傷與抗性'}] },
         { id: 877, name: '莫魯貝可', type: 'electric', hp: 110, weakness: 'none', resistance: {type:'none', val:0}, attacks: [{n:'餓肚子', d:10, cost:['any'], special:'draw_1', desc:'抽 1 張卡'}, {n:'氣場輪', d:50, cost:['electric','electric'], special:'paralyze_flip', desc:'正面對手麻痺'}] },
         { id: 828, name: '狐大盜', type: 'normal', hp: 100, weakness: 'none', resistance: {type:'normal', val:20}, attacks: [{n:'偷襲', d:30, cost:['any']}, {n:'大聲咆哮', d:60, cost:['any','any'], special:'enemy_dmg_minus_30', desc:'下回合敵方攻擊-30'}] },
         { id: 461, name: '馬狃拉', type: 'normal', hp: 100, weakness: 'fire', resistance: {type:'none', val:0}, attacks: [{n:'毒爪', d:30, cost:['any'], special:'poison', desc:'必定中毒'}, {n:'暗襲要害', d:70, cost:['any','any']}] },
@@ -577,7 +535,7 @@
         teams: { 1: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0, wrongAnswers: [] }, 2: { pokemon: [], activeIdx: 0, hand: [], lostLives: 0, wrongAnswers: [] } }
     };
 
-    // --- CSV 資料解析 (支援題號系統) ---
+    // --- CSV 資料解析 ---
     function parseCSVData(text) {
         const lines = text.split(/\r\n|\n|\r/); 
         state.csvQuestions = [];
@@ -591,7 +549,6 @@
             let cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"(.*)"$/, '$1'));
             while(cols.length > 0 && cols[cols.length - 1] === "") { cols.pop(); }
             
-            // 新版格式：[0]題號, [1]題目, [2...N-1]選項, [N]答案
             if(cols.length >= 4) {
                 let qId = cols[0]; let qText = cols[1]; let ans = parseInt(cols[cols.length - 1]); 
                 let opts = cols.slice(2, cols.length - 1).filter(o => o !== ""); 
@@ -672,7 +629,7 @@
             attempts++; if (Math.abs(hp1 - hp2) <= 80 || attempts >= 50) isBalanced = true; 
         }
         document.getElementById('lobby').classList.add('hidden'); document.getElementById('battle-field').classList.remove('hidden');
-        updateBattleScale(); // 進入戰鬥時立刻更新一次縮放
+        updateBattleScale(); 
         state.step = 'setup'; addLog(`🎲 請確認雙方陣容，可選擇重抽卡牌或決定先攻方。`); render();
     }
 
@@ -718,7 +675,7 @@
         return `<div style="text-align:center; line-height:1.5;">${text}</div>`;
     }
 
-    // --- ★ 智慧答題系統：文字長度偵測與自動縮放 ★ ---
+    // --- ★ 智慧答題系統 ---
     function startQuiz() {
         const myTeam = state.teams[state.currentTeam]; const activeP = myTeam.pokemon[myTeam.activeIdx];
         const aliveBench = myTeam.pokemon.filter((p, idx) => idx !== myTeam.activeIdx && p.currHp > 0);
@@ -734,43 +691,39 @@
         state.step = 'quiz'; state.selectedHandItem = null; state.isAttacking = false;
         
         document.getElementById('modal-team-name').textContent = `TEAM ${state.currentTeam} 答題時間`;
-        document.getElementById('modal-team-name').style.color = '#ffcb05';
-        document.getElementById('modal-team-name').style.textShadow = '0 0 10px rgba(255,203,5,0.5)';
         
         const qContainer = document.getElementById('quiz-options-container'); qContainer.innerHTML = '';
 
         if (state.quizMode === 'csv' && state.csvQuestions.length > 0) {
             const qObj = state.csvQuestions[state.qIdx % state.csvQuestions.length];
             
-            // 題目字數防跑版
-            let qFontSize = qObj.q.length > 30 ? '24px' : '32px';
-            document.getElementById('quiz-text').innerHTML = `<div style="font-size:${qFontSize}; font-weight:bold; color:#fff; text-shadow: 2px 2px 4px #000; margin-bottom:20px;">${qObj.q}</div>`;
+            let qFontSize = qObj.q.length > 30 ? '36px' : '48px';
+            document.getElementById('quiz-text').innerHTML = `<div style="font-size:${qFontSize}; font-weight:bold; color:#fff; text-shadow: 2px 2px 4px #000; margin-bottom:30px;">${qObj.q}</div>`;
             
             const styles = ['kb-red', 'kb-blue', 'kb-yellow', 'kb-green']; const icons = ['▲', '◆', '●', '■'];
             
             qObj.opts.forEach((opt, i) => {
                 const isCorrect = (i + 1 === qObj.ans);
                 
-                // ★ 智慧縮放核心：判斷字串長度 ★
-                let fontSize = '24px';
+                let fontSize = '32px';
                 if (opt.length > 40) fontSize = '14px';
-                else if (opt.length > 15) fontSize = '18px';
+                else if (opt.length > 15) fontSize = '20px';
 
                 qContainer.innerHTML += `
                     <button class="kahoot-btn ${styles[i % 4]}" onclick="checkAnswer(${isCorrect})">
-                        <span style="margin-right:12px; font-size:24px; flex-shrink:0;">${icons[i % 4]}</span>
+                        <span style="margin-right:15px; font-size:36px; flex-shrink:0;">${icons[i % 4]}</span>
                         <span style="flex:1; text-align:left; font-size:${fontSize}; line-height:1.3; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; text-overflow:ellipsis;">${opt}</span>
                     </button>
                 `;
             });
         } else {
             let qText = state.questions[state.qIdx % state.questions.length] || "無題目";
-            let qFontSize = qText.length > 30 ? '24px' : '32px';
-            document.getElementById('quiz-text').innerHTML = `<div style="font-size:${qFontSize}; font-weight:bold; color:#fff; text-shadow: 2px 2px 4px #000; margin-bottom:20px;">${qText}</div>`;
+            let qFontSize = qText.length > 30 ? '36px' : '48px';
+            document.getElementById('quiz-text').innerHTML = `<div style="font-size:${qFontSize}; font-weight:bold; color:#fff; text-shadow: 2px 2px 4px #000; margin-bottom:30px;">${qText}</div>`;
             
             qContainer.innerHTML = `
-                <button class="btn" style="background:#4caf50; color:white; padding:15px 40px; width:auto; font-size:24px; margin:0 10px;" onclick="checkAnswer(true)">◯ 答對</button>
-                <button class="btn" style="background:#f44336; color:white; padding:15px 40px; width:auto; font-size:24px; margin:0 10px;" onclick="checkAnswer(false)">✕ 答錯</button>
+                <button class="btn" style="background:#4caf50; color:white; padding:20px 50px; width:auto; font-size:36px; margin:0 15px;" onclick="checkAnswer(true)">◯ 答對</button>
+                <button class="btn" style="background:#f44336; color:white; padding:20px 50px; width:auto; font-size:36px; margin:0 15px;" onclick="checkAnswer(false)">✕ 答錯</button>
             `;
         }
 
@@ -920,6 +873,14 @@
         let anyCount = attack.cost.filter(c => c === 'any').length; return (eCopy.length + rainbowCount) >= anyCount;
     }
 
+    // ★ 支援從 Modal 內部延遲攻擊，讓玩家能欣賞特效 ★
+    function executeAttackFromInspect(t, aIdx) {
+        closeInspect();
+        setTimeout(() => {
+            executeAttack(null, t, aIdx);
+        }, 400); // 延遲 400ms，讓放大視窗關閉並重新聚焦畫面後再攻擊
+    }
+
     function executeAttack(event, teamNum, atkIdx) {
         if (event) event.stopPropagation(); if (state.isAttacking) return; 
         try {
@@ -1051,8 +1012,24 @@
             if (atk.special === 'reduce_dmg_taken_50') attacker.status.reduce_dmg_50 = true;
             if (atk.special === 'self_dmg_20') { attacker.currHp = Math.max(0, attacker.currHp - 20); showDamage(attacker.uid, 20, 'normal', false, attacker.uid); }
             if (atk.special === 'self_dmg_30') { attacker.currHp = Math.max(0, attacker.currHp - 30); showDamage(attacker.uid, 30, 'normal', false, attacker.uid); }
-            if (atk.special === 'draw_1' && state.teams[state.currentTeam].hand.length < 7) state.teams[state.currentTeam].hand.push({ cardType: 'energy', type: 'normal' });
-            if (atk.special === 'draw_2') { if(state.teams[state.currentTeam].hand.length < 7) state.teams[state.currentTeam].hand.push({ cardType: 'energy', type: 'normal' }); if(state.teams[state.currentTeam].hand.length < 7) state.teams[state.currentTeam].hand.push({ cardType: 'energy', type: 'normal' }); }
+            
+            // ★ 修改：抽卡招式優化 (隨機能量或 30% 機率抽中道具) ★
+            if (atk.special === 'draw_1' && state.teams[state.currentTeam].hand.length < 7) {
+                if (Math.random() < 0.3) {
+                    state.teams[state.currentTeam].hand.push({ cardType: 'trainer', ...TRAINERS_DB[Math.floor(Math.random() * TRAINERS_DB.length)] });
+                } else {
+                    state.teams[state.currentTeam].hand.push({ cardType: 'energy', type: getSmartEnergyType(state.teams[state.currentTeam]) });
+                }
+            }
+            if (atk.special === 'draw_2') {
+                for(let k=0; k<2; k++) {
+                    if(state.teams[state.currentTeam].hand.length < 7) {
+                        if (Math.random() < 0.3) state.teams[state.currentTeam].hand.push({ cardType: 'trainer', ...TRAINERS_DB[Math.floor(Math.random() * TRAINERS_DB.length)] });
+                        else state.teams[state.currentTeam].hand.push({ cardType: 'energy', type: getSmartEnergyType(state.teams[state.currentTeam]) });
+                    }
+                }
+            }
+
             if (atk.special === 'discard_enemy_energy' || (atk.special === 'discard_enemy_energy_flip' && coinResult)) if(defender.attachedEnergy.length > 0) defender.attachedEnergy.pop();
             if (atk.special === 'discard_1_elec_and_paralyze') { let r=false; attacker.attachedEnergy = attacker.attachedEnergy.filter(e => { if((e==='electric'||e==='rainbow') && !r) { r=true; return false; } return true; }); defender.status.paralyze = true; }
             if (atk.special === 'enemy_dmg_minus_30') defender.status.enemy_dmg_minus_30 = 2;
@@ -1134,10 +1111,33 @@
         for(let i=0; i<60; i++) { const conf = document.createElement('div'); conf.className = 'confetti'; conf.style.left = Math.random() * 100 + 'vw'; conf.style.animationDelay = Math.random() * 3 + 's'; conf.style.backgroundColor = ['#f44336', '#2196F3', '#4CAF50', '#FFEB3B', '#E91E63'][Math.floor(Math.random()*5)]; document.body.appendChild(conf); }
     }
 
+    // ★ 修改：在放大卡牌的招式區塊加入敘述 (💡) ★
     function inspectCard(t, pIdx) {
         const p = state.teams[t].pokemon[pIdx]; const resText = p.resistance.type !== 'none' && p.resistance.val > 0 ? `${getTypeName(p.resistance.type)} -${p.resistance.val}` : '無';
         let statusHtml = ''; if (p.status.poison) statusHtml += '<span class="status-tag status-poison">中毒</span>'; if (p.status.burn) statusHtml += '<span class="status-tag status-burn">灼傷</span>'; if (p.status.asleep) statusHtml += '<span class="status-tag status-asleep">睡眠</span>'; if (p.status.confused) statusHtml += '<span class="status-tag status-confused">混亂</span>'; if (p.status.paralyze) statusHtml += '<span class="status-tag status-paralyze">麻痺</span>'; if (p.status.immune_next) statusHtml += '<span class="status-tag status-immune">免傷</span>'; if (p.status.cant_attack > 0) statusHtml += '<span class="status-tag status-cant-act">無法攻擊</span>';
         let buffHtml = ''; if (p.buff.turns > 0) buffHtml += `<div class="item-tag">💪攻擊+${p.buff.dmg}</div>`; if (p.buff.hasFocusSash) buffHtml += `<div class="item-tag">🎗️氣勢披帶</div>`;
+        
+        let attacksHtml = '';
+        const isMyActive = (t === state.currentTeam && pIdx === state.teams[t].activeIdx && state.step === 'action');
+
+        p.attacks.forEach((atk, aIdx) => {
+            let costHtml = ''; if (atk.cost.length === 4) { costHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; width:28px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; } else { costHtml = `<div style="display:flex; flex-wrap:wrap; max-width:45px; gap:2px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; }
+            
+            if (isMyActive) {
+                const hasEnergy = canUseAttack(p, atk);
+                const rowClass = hasEnergy ? 'attack-ready' : 'attack-disabled';
+                // ★ 加入了 atk.desc (💡) 判斷
+                attacksHtml += `<div class="attack-row ${rowClass}" style="padding:15px; font-size:18px; margin-top:10px; border: 2px solid #aaa; flex-direction:column; align-items:stretch;" onclick="event.stopPropagation(); if(${hasEnergy}) executeAttackFromInspect(${t}, ${aIdx}); else showAlert('能量不足！');">
+                    <div style="display:flex; width:100%; justify-content:space-between; align-items:center;">
+                        <div class="attack-cost">${costHtml}</div><span style="flex:1; margin-left:10px; font-weight:bold;">${atk.n}${atk.desc ? ' ✨' : ''}</span><span style="font-size:24px; font-weight:bold;">${atk.d}</span>
+                    </div>
+                    ${atk.desc ? `<div style="font-size:14px; color:#444; margin-top:8px; text-align:left;">💡 ${atk.desc}</div>` : ''}
+                </div>`;
+            } else {
+                attacksHtml += `<div class="attack-row" style="flex-direction:column; align-items:flex-start;"><div style="display:flex; width:100%; justify-content:space-between; align-items:center;"><div class="attack-cost">${costHtml}</div><span style="flex:1; margin-left:10px; font-weight:bold;">${atk.n}</span><span style="font-size:18px; font-weight:bold;">${atk.d}</span></div>${atk.desc ? `<div style="font-size:11px; color:#444; margin-top:5px;">💡 ${atk.desc}</div>` : ''}</div>`;
+            }
+        });
+
         const cardHtml = `
             <div class="card type-${p.type}" style="cursor: default;">
                 <div class="card-header"><div><div style="margin-bottom:5px;">${statusHtml}</div><span style="font-size:18px;">${p.name}</span></div>
@@ -1146,12 +1146,7 @@
                 <div class="hp-bar" style="height:12px;"><div class="hp-fill" style="width:${(p.currHp/p.hp)*100}%; background:${(p.currHp/p.hp)*100 < 30 ? '#ff4422' : '#4caf50'}"></div></div>
                 <div class="card-img"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png"></div>
                 <div class="energy-container" style="padding: 5px;">已附著: ${p.attachedEnergy.length === 0 ? '無' : p.attachedEnergy.map(e => `<div class="energy-icon energy-${e}"></div>`).join('')}</div>
-                <div style="margin-top:15px; flex:1;">
-                    ${p.attacks.map(atk => {
-                        let costHtml = ''; if (atk.cost.length === 4) { costHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; width:28px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; } else { costHtml = `<div style="display:flex; flex-wrap:wrap; max-width:45px; gap:2px;">${atk.cost.map(c => `<div class="energy-icon energy-${c}"></div>`).join('')}</div>`; }
-                        return `<div class="attack-row" style="flex-direction:column; align-items:flex-start;"><div style="display:flex; width:100%; justify-content:space-between; align-items:center;"><div class="attack-cost">${costHtml}</div><span style="flex:1; margin-left:10px; font-weight:bold;">${atk.n}</span><span style="font-size:18px; font-weight:bold;">${atk.d}</span></div>${atk.desc ? `<div style="font-size:11px; color:#444; margin-top:5px;">💡 ${atk.desc}</div>` : ''}</div>`;
-                    }).join('')}
-                </div>
+                <div style="margin-top:15px; flex:1;">${attacksHtml}</div>
                 <div style="font-size:12px; opacity:0.8; margin-top:15px; display:flex; justify-content:space-between; border-top:1px solid rgba(0,0,0,0.2); padding-top:5px;"><span>弱點: ${getTypeName(p.weakness)} x1.5</span><span>抗性: ${resText}</span></div>
             </div>`;
         document.getElementById('inspect-content').innerHTML = cardHtml; document.getElementById('inspect-modal').style.display = 'flex';
@@ -1239,7 +1234,7 @@
         } else {
             setupUI.style.display = 'none'; turnInd.style.display = 'block'; actionHint.style.display = 'block';
             turnInd.textContent = state.step === 'must_swap' ? `⚠️ TEAM ${state.currentTeam} 必須換人！` : `▶ TEAM ${state.currentTeam} 的回合`;
-            turnInd.style.color = '#ffcb05'; // ★ 將中央回合提示強制改為黃色
+            turnInd.style.color = '#ffcb05'; // 統一為黃色
             endBtn.style.display = state.step === 'action' ? 'block' : 'none';
         }
     }
